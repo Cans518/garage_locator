@@ -1,45 +1,15 @@
 import time
-import os
 import threading
 from pathlib import Path
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QImage
 
-from inference import DetectionResult, VehiclePlateDetector
+from .inference import DetectionResult, VehiclePlateDetector
+from .plate_utils import draw_text
 
-# --- 跨平台字体加载器 ---
-def _load_font(text_size):
-    font_paths = [
-        "simhei.ttf",
-        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
-        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
-        "C:/Windows/Fonts/simhei.ttf",
-        "C:/Windows/Fonts/msyh.ttc",
-    ]
-    for path in font_paths:
-        if os.path.exists(path):
-            try:
-                return ImageFont.truetype(path, int(text_size), encoding="utf-8")
-            except OSError:
-                continue
-    return ImageFont.load_default()
-
-def draw_text(img, text, position, text_color=(0, 0, 255), text_size=24):
-    """支持绘制中文车牌的 PIL 字体绘制"""
-    try:
-        img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-        draw = ImageDraw.Draw(img_pil)
-        font = _load_font(text_size)
-        draw.text(position, text, fill=text_color, font=font)
-        return cv2.cvtColor(np.asarray(img_pil), cv2.COLOR_RGB2BGR)
-    except Exception:
-        # Fallback to cv2
-        cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX, 0.8, text_color, 2)
-        return img
 
 def draw_annotations(img, results: list[DetectionResult]):
     """美观标注车牌和关键点"""

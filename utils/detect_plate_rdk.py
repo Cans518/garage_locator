@@ -12,7 +12,7 @@ sys.path.append(str(repo_dir / "samples" / "vision" / "ultralytics_yolo" / "runt
 
 import argparse
 
-from plate_utils import (
+from utils.plate_utils import (
     DEFAULT_RDK_REC_MODEL,
     DEFAULT_YOLO_MODEL,
     VIDEO_EXTENSIONS,
@@ -560,7 +560,7 @@ def main():
     print(f"Loading YOLO model from {args.model}...")
     try:
         if args.model.suffix == ".bin":
-            from ultralytics_yolo_pose import UltralyticsYOLOPose, UltralyticsYOLOPoseConfig
+            from utils.ultralytics_yolo_pose import UltralyticsYOLOPose, UltralyticsYOLOPoseConfig
             cfg = UltralyticsYOLOPoseConfig(
                 model_path=str(args.model),
                 nkpt=4,

@@ -1,11 +1,17 @@
 import sys
 import argparse
 import time
+from pathlib import Path
 from PyQt5.QtCore import QCoreApplication, pyqtSlot, QObject
 from PyQt5.QtGui import QImage
-from inference import BPUDetectionBackend, PCDetectionBackend
-from camera_worker import FrameBuffer, CameraGrabber, InferenceWorker
-from db_manager import DBManager
+
+project_dir = Path(__file__).resolve().parents[1]
+if str(project_dir) not in sys.path:
+    sys.path.insert(0, str(project_dir))
+
+from utils.inference import BPUDetectionBackend, PCDetectionBackend
+from utils.camera_worker import FrameBuffer, CameraGrabber, InferenceWorker
+from utils.db_manager import DBManager
 
 class HeadlessTester(QObject):
     """Headless 模式下验证多线程拉流与 BPU 推理的核心逻辑"""
@@ -92,7 +98,7 @@ def main():
         detector = BPUDetectionBackend(args.yolo_bin, args.lpr_bin)
     else:
         # PC 测试模式（如果本地有环境）
-        from inference import PCDetectionBackend
+        from utils.inference import PCDetectionBackend
         detector = PCDetectionBackend("models/yolo11m-pose-carplate.pt")
 
     # 4. 运行测试

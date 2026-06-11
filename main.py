@@ -13,10 +13,10 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QFont
 
-from inference import PCDetectionBackend, BPUDetectionBackend
-from camera_worker import FrameBuffer, CameraGrabber, InferenceWorker
-from db_manager import DBManager
-from gui_theme import get_qss_theme, get_no_signal_pixmap
+from utils.inference import PCDetectionBackend, BPUDetectionBackend
+from utils.camera_worker import FrameBuffer, CameraGrabber, InferenceWorker
+from utils.db_manager import DBManager
+from utils.gui_theme import get_qss_theme, get_no_signal_pixmap
 
 
 def ndarray_to_qpixmap(img, width=640, height=480) -> QPixmap:

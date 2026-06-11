@@ -65,7 +65,7 @@ class DBManager:
                 SELECT camera_id, timestamp, crop_image 
                 FROM vehicle_history 
                 WHERE plate_number = ? 
-                ORDER BY timestamp DESC 
+                ORDER BY timestamp DESC, id DESC
                 LIMIT 1
             """, (plate_number,))
             row = cursor.fetchone()
@@ -94,11 +94,18 @@ class DBManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT plate_number, camera_id, timestamp 
-                FROM vehicle_history 
-                WHERE plate_number LIKE ? 
-                GROUP BY plate_number 
-                ORDER BY timestamp DESC
+                SELECT vh.plate_number, vh.camera_id, vh.timestamp
+                FROM vehicle_history vh
+                INNER JOIN (
+                    SELECT plate_number, MAX(id) AS latest_id
+                    FROM vehicle_history
+                    WHERE plate_number LIKE ?
+                    GROUP BY plate_number
+                ) latest
+                    ON vh.plate_number = latest.plate_number
+                    AND vh.id = latest.latest_id
+                ORDER BY vh.timestamp DESC, vh.id DESC
+                LIMIT 20
             """, (f"%{search_term}%",))
             rows = cursor.fetchall()
 

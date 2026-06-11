@@ -121,14 +121,28 @@ def _load_font(text_size):
 
 def draw_text(img, text, position, text_color=(255, 0, 0), text_size=30):
     """Draw UTF-8 text on an OpenCV BGR image."""
-    if isinstance(img, np.ndarray):
-        img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    else:
-        img_pil = img
+    try:
+        if isinstance(img, np.ndarray):
+            img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        else:
+            img_pil = img
 
-    draw = ImageDraw.Draw(img_pil)
-    draw.text(position, str(text), fill=text_color, font=_load_font(text_size))
-    return cv2.cvtColor(np.asarray(img_pil), cv2.COLOR_RGB2BGR)
+        draw = ImageDraw.Draw(img_pil)
+        draw.text(position, str(text), fill=text_color, font=_load_font(text_size))
+        return cv2.cvtColor(np.asarray(img_pil), cv2.COLOR_RGB2BGR)
+    except Exception:
+        if not isinstance(img, np.ndarray):
+            raise
+        cv2.putText(
+            img,
+            str(text),
+            position,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            max(0.5, float(text_size) / 30.0),
+            text_color,
+            2,
+        )
+        return img
 
 
 def clean_plate_number(text):

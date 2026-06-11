@@ -41,10 +41,12 @@ from typing import Dict, List, Optional, Tuple
 import hbm_runtime
 import numpy as np
 
-sys.path.append(os.path.abspath("../../../../../"))
+project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_dir not in sys.path:
+    sys.path.append(project_dir)
 
-import utils.py_utils.postprocess as post_utils
-import utils.py_utils.preprocess as pre_utils
+import utils.postprocess as post_utils
+import utils.preprocess as pre_utils
 
 
 logger = logging.getLogger("Ultralytics_YOLO")

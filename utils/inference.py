@@ -1,15 +1,20 @@
 import sys
-import os
-import time
 from pathlib import Path
 from dataclasses import dataclass
-import cv2
 import numpy as np
 
 # 将当前项目目录加入 sys.path 确保模块可直接加载
-project_dir = Path(__file__).resolve().parent
+project_dir = Path(__file__).resolve().parents[1]
 if str(project_dir) not in sys.path:
     sys.path.insert(0, str(project_dir))
+
+from .plate_utils import (  # noqa: E402
+    clean_plate_number,
+    crop_plate,
+    expand_points,
+    four_point_transform,
+    order_points,
+)
 
 @dataclass
 class DetectionResult:
@@ -18,65 +23,6 @@ class DetectionResult:
     text: str             # 识别出的车牌文本
     confidence: float     # OCR 置信度
     crop: np.ndarray      # 车牌裁切图
-
-# --- 车牌剪裁核心透视变换逻辑 (CPU 共享) ---
-
-def order_points(pts):
-    pts = np.asarray(pts, dtype="float32")
-    if pts.shape[0] < 4:
-        raise ValueError(f"Expected at least 4 points, got {pts.shape[0]}")
-    pts = pts[:4]
-    rect = np.zeros((4, 2), dtype="float32")
-    sums = pts.sum(axis=1)
-    rect[0] = pts[np.argmin(sums)]
-    rect[2] = pts[np.argmax(sums)]
-    diffs = np.diff(pts, axis=1)
-    rect[1] = pts[np.argmin(diffs)]
-    rect[3] = pts[np.argmax(diffs)]
-    return rect
-
-def expand_points(pts, scale=1.06):
-    pts = np.asarray(pts, dtype="float32")
-    center = pts.mean(axis=0)
-    return center + (pts - center) * float(scale)
-
-def four_point_transform(image, pts, padding=8):
-    rect = order_points(pts)
-    tl, tr, br, bl = rect
-    width_a = np.linalg.norm(br - bl)
-    width_b = np.linalg.norm(tr - tl)
-    max_width = max(1, int(max(width_a, width_b)))
-    height_a = np.linalg.norm(tr - br)
-    height_b = np.linalg.norm(tl - bl)
-    max_height = max(1, int(max(height_a, height_b)))
-    padding = max(0, int(padding))
-    dst = np.array([
-        [padding, padding],
-        [max_width - 1 + padding, padding],
-        [max_width - 1 + padding, max_height - 1 + padding],
-        [padding, max_height - 1 + padding]
-    ], dtype="float32")
-    matrix = cv2.getPerspectiveTransform(rect, dst)
-    return cv2.warpPerspective(
-        image,
-        matrix,
-        (max_width + 2 * padding, max_height + 2 * padding),
-        borderMode=cv2.BORDER_REPLICATE
-    )
-
-def crop_plate(image, pts, crop_scale=1.0, crop_padding=0, min_crop_width=300):
-    expanded = expand_points(pts, scale=crop_scale)
-    crop = four_point_transform(image, expanded, padding=crop_padding)
-    height, width = crop.shape[:2]
-    if width > 0 and width < min_crop_width:
-        scale = float(min_crop_width) / float(width)
-        crop = cv2.resize(
-            crop,
-            (int(width * scale), int(height * scale)),
-            interpolation=cv2.INTER_CUBIC
-        )
-    return crop
-
 
 class VehiclePlateDetector:
     """推理后端抽象基类"""
@@ -146,9 +92,7 @@ class PCDetectionBackend(VehiclePlateDetector):
             except Exception:
                 text, score = "", 0.0
 
-            # 清理非车牌字符
-            import re
-            cleaned_text = "".join(re.findall(r"[\u4e00-\u9fa5A-Z0-9]", text))
+            cleaned_text = clean_plate_number(text)
 
             output.append(DetectionResult(
                 box=box,
@@ -171,7 +115,7 @@ class BPUDetectionBackend(VehiclePlateDetector):
             raise RuntimeError("hbm_runtime not found. Make sure you run on RDK development board.") from exc
 
         # 1. 初始化 BPU YOLO-pose 模型
-        from ultralytics_yolo_pose import UltralyticsYOLOPose, UltralyticsYOLOPoseConfig
+        from .ultralytics_yolo_pose import UltralyticsYOLOPose, UltralyticsYOLOPoseConfig
         cfg = UltralyticsYOLOPoseConfig(
             model_path=str(yolo_bin_path),
             nkpt=4,
@@ -181,7 +125,7 @@ class BPUDetectionBackend(VehiclePlateDetector):
         self.yolo = UltralyticsYOLOPose(cfg)
 
         # 2. 初始化 BPU LPRNet 识别模型
-        from detect_plate_rdk import LPRNetRecognizer
+        from .detect_plate_rdk import LPRNetRecognizer
         self.lpr = LPRNetRecognizer(
             lpr_bin_path,
             input_color="rgb",
@@ -223,9 +167,7 @@ class BPUDetectionBackend(VehiclePlateDetector):
             except Exception:
                 text, score = "", 0.0
 
-            # 过滤非车牌字符
-            import re
-            cleaned_text = "".join(re.findall(r"[\u4e00-\u9fa5A-Z0-9]", text))
+            cleaned_text = clean_plate_number(text)
 
             output.append(DetectionResult(
                 box=box,

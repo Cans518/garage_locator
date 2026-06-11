@@ -39,15 +39,23 @@ garage_locator/
 │   ├── yolo11m-pose-carplate.pt                       # PC端 PyTorch 模型权重
 │   ├── yolo11m-pose-carplate_bayese_640x640_nv12.bin  # 板端 BPU 关键点定位模型
 │   └── lpr.bin                                        # 板端 BPU LPRNet 识别模型
-├── inference.py                # 统一的推理后端（兼容 PC 与 BPU）
-├── camera_worker.py            # 多线程图像采集与串行推理逻辑
-├── db_manager.py               # 本地 SQLite 历史轨迹数据库管理器
-├── gui_theme.py                # 企业级深色科技监控台 QSS 样式表与离线占位图
+├── utils/                      # 单层方法文件目录
+│   ├── camera_worker.py        # 多线程图像采集与串行推理逻辑
+│   ├── db_manager.py           # 本地 SQLite 历史轨迹数据库管理器
+│   ├── inference.py            # 统一的推理后端（兼容 PC 与 BPU）
+│   ├── plate_utils.py          # 车牌裁切、文本清洗、绘制与图片工具
+│   ├── detect_plate_rdk.py     # RDK LPRNet 识别器与独立 CLI
+│   ├── ultralytics_yolo_pose.py # RDK X5 YOLO pose 包装层
+│   ├── preprocess.py           # RDK YOLO 输入预处理
+│   └── postprocess.py          # RDK YOLO 输出后处理
+├── test/
+│   └── test_headless.py        # 板端无显示器 SSH 环境自检工具
 ├── main.py                     # 全屏监控大屏主控程序
-├── test_headless.py            # 板端无显示器 SSH 环境自检工具
 ├── requirements.txt            # 项目依赖说明书
 └── .gitignore                  # Git 忽略配置
 ```
+
+面向后续开发的模块职责与数据流说明见 [`docs/REPO_MAP.md`](docs/REPO_MAP.md)。
 
 ---
 
@@ -70,9 +78,9 @@ python3 main.py \
 ```
 
 ### 4.3 板端 SSH 终端自检 (无界面模式)
-若通过 SSH 连接到地瓜派（RDK X5），且没有接 HDMI 屏幕，可以使用 `test_headless.py` 进行逻辑联调自检（会自动启动 Qt 事件循环和线程，在后台做车牌检测并写进 SQLite 数据库）：
+若通过 SSH 连接到地瓜派（RDK X5），且没有接 HDMI 屏幕，可以使用 `test/test_headless.py` 进行逻辑联调自检（会自动启动 Qt 事件循环和线程，在后台做车牌检测并写进 SQLite 数据库）：
 ```bash
-python3 test_headless.py \
+python3 test/test_headless.py \
   --backend bpu \
   --inputs assets/test_plate.jpg \
   --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
