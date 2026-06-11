@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+*.db
+*.db-journal
+*.log
+
+# 模型权重大文件过滤
+*.pt
+*.onnx
+*.bin
+
+# 允许项目附带的具体模型和资源图片被 Git 跟踪
+!models/yolo11m-pose-carplate.pt
+!models/yolo11m-pose-carplate_bayese_640x640_nv12.bin
+!models/lpr.bin
+!assets/*.jpg
+
+# 测试及渲染输出
+output_results/
+plate_crops/
+temp_*/

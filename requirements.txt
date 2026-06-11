@@ -1,0 +1,16 @@
+# 核心基础与 GUI 依赖 (板端部署与 PC 测试通用)
+PyQt5>=5.15.0
+numpy>=1.20.0
+opencv-python>=4.5.0
+Pillow>=8.0.0
+pyclipper>=1.2.0
+
+# ----------------- 可选依赖 -----------------
+# 1. PC 电脑测试端 (用于 --backend pc 推理)
+# 如果在个人电脑上开发测试，请取消注释以下依赖进行安装：
+# ultralytics>=8.0.0
+# paddlepaddle>=2.4.0
+# paddleocr>=2.6.0
+
+# 2. BPU 板端运行环境 (RDK X5 核心板运行 --backend bpu)
+# 板端固件默认已内置 hbm_runtime 和 Python SDK，无需额外 pip 安装
