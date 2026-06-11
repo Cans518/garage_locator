@@ -1,84 +1,103 @@
 # 地库车辆定位系统 (Garage Vehicle Locator System)
 
-这是一个基于 **PyQt5** 和地瓜派 **RDK X5 BPU 硬件加速** 构建的多路摄像头车牌定位与轨迹检索系统。本系统能够实时抓取并处理地库多个摄像头的监控画面，记录所有车辆在各个摄像头的最新通行轨迹，并提供车牌检索功能，帮助迅速确认目标车辆的“最后出现位置”。
+基于 **PyQt5** 和地瓜派 **RDK X5 BPU 硬件加速** 的多路摄像头车牌定位与轨迹检索系统。系统会实时读取地库摄像头画面，检测车牌四角，裁切矫正后识别车牌，并把车辆最近一次出现的位置写入本地 SQLite 数据库，方便通过车牌号快速查询“最后出现位置”。
 
----
+## 功能概览
 
-## 1. 效果展示
+- 支持最多 4 路摄像头、视频文件或测试图片输入。
+- 使用槽位式共享帧缓冲，采集线程只保留每路最新画面，避免视频积压。
+- 使用单独推理线程串行调用 PC 或 BPU 后端，降低 BPU 资源冲突风险。
+- 支持 PC 测试后端：YOLO pose + PaddleOCR。
+- 支持 RDK X5 板端后端：YOLO pose `.bin` + LPRNet `.bin`。
+- 使用 SQLite 保存车牌、摄像头编号、时间和车牌裁切图。
+- PyQt5 全屏监控台支持实时日志和车牌末次位置查询。
+- 提供 SSH 无界面自检脚本，便于板端联调。
 
-本系统使用高精度的 YOLOv11m-pose 模型进行车牌四角检测，定位极度精准，并对车牌进行透视变换裁切后交由 OCR 字符识别模块，以下为系统在板端对测试车牌执行的推理绘制效果：
+## 效果展示
 
-### 车牌定位与几何切片效果
-| 样例一：皖A·S0747 定位与识别 | 样例二：皖A·Q4025 定位与识别 |
+系统使用 YOLO pose 模型定位车牌四角，再进行透视变换裁切和字符识别。以下是板端测试图的标注效果：
+
+| 样例一：皖A·S0747 | 样例二：皖A·Q4025 |
 | :---: | :---: |
 | ![皖A·S0747](assets/output_test_plate_bpu.jpg) | ![皖A·Q4025](assets/output_test_plate2_bpu.jpg) |
 
----
+## 架构说明
 
-## 2. 核心架构与多线程设计
+核心并发模型是 **CameraGrabber 多路采集 + FrameBuffer 最新帧槽位 + InferenceWorker 单线程串行推理**。
 
-由于 BPU（板端神经网络加速核心）在运行前向前向推理时是**串行**的，为防止多路高频视频流同时抢占 BPU 资源造成硬件阻塞与延迟堆积，我们设计了**槽位式共享缓冲区 (FrameBuffer) + 独立串行推理线程**的并发模型：
+1. `CameraGrabber` 每路一个线程，从摄像头、视频或图片源读取画面。
+2. `FrameBuffer` 按 `camera_id` 保存最新帧，新帧覆盖旧帧，保证实时性。
+3. `InferenceWorker` 等待任意通道更新，然后串行取出当前批次帧并调用检测后端。
+4. `PCDetectionBackend` 或 `BPUDetectionBackend` 输出统一的 `DetectionResult`。
+5. UI 线程更新监控画面，并通过 `DBManager` 记录车牌出现事件。
+6. 查询框按车牌号查询 SQLite 中的最后出现位置。
 
-* **摄像头采集线程 (`CameraGrabber` x 4)**：每个摄像头由一个独立的轻量线程维护。它们只负责从物理摄像头或测试视频文件中拉流，并实时将最新帧写入 `FrameBuffer` 的对应槽位中（若有旧帧则直接覆盖，保证绝对的实时性，消除积压）。支持断线自恢复和视频文件循环播放。
-* **共享缓冲槽 (`FrameBuffer`)**：槽位式线程安全缓冲区。
-* **独立推理线程 (`InferenceWorker` x 1)**：后台唯一的排他推理线程。当收到画面更新事件时，按顺序从槽位提取待处理帧，串行调起 BPU 执行 YOLO 车牌定位与 LPRNet 车牌识别，绘制框图并把轨迹持久化保存到 SQLite 数据库中。
-* **主 UI 线程**：仅负责接收推理线程发送的标注完毕后的视频信号并绘制大屏，完全不参与推理阻塞，保障监控画面极致流畅。
+更细的模块职责见 [`docs/REPO_MAP.md`](docs/REPO_MAP.md)。
 
----
-
-## 3. 项目目录结构
+## 目录结构
 
 ```text
 garage_locator/
-├── assets/                     # 系统资源与效果展示图片
-│   ├── test_plate.jpg          # 测试车牌图 1
-│   ├── test_plate2.jpg         # 测试车牌图 2
-│   ├── output_test_plate_bpu.jpg
-│   └── output_test_plate2_bpu.jpg
-├── models/                     # PC与板端推理模型权重
-│   ├── yolo11m-pose-carplate.pt                       # PC端 PyTorch 模型权重
-│   ├── yolo11m-pose-carplate_bayese_640x640_nv12.bin  # 板端 BPU 关键点定位模型
-│   └── lpr.bin                                        # 板端 BPU LPRNet 识别模型
-├── utils/                      # 单层方法文件目录
-│   ├── camera_worker.py        # 多线程图像采集与串行推理逻辑
-│   ├── db_manager.py           # 本地 SQLite 历史轨迹数据库管理器
-│   ├── inference.py            # 统一的推理后端（兼容 PC 与 BPU）
-│   ├── plate_utils.py          # 车牌裁切、文本清洗、绘制与图片工具
-│   ├── detect_plate_rdk.py     # RDK LPRNet 识别器与独立 CLI
-│   ├── ultralytics_yolo_pose.py # RDK X5 YOLO pose 包装层
-│   ├── preprocess.py           # RDK YOLO 输入预处理
-│   └── postprocess.py          # RDK YOLO 输出后处理
+├── assets/                     # 测试图片和 README 展示图片
+├── docs/
+│   ├── REPO_MAP.md             # 模块地图和数据流
+│   └── TESTING.md              # 轻量测试说明
+├── models/                     # PC 与板端模型权重
+│   ├── yolo11m-pose-carplate.pt
+│   ├── yolo11m-pose-carplate_bayese_640x640_nv12.bin
+│   └── lpr.bin
 ├── test/
-│   └── test_headless.py        # 板端无显示器 SSH 环境自检工具
-├── main.py                     # 全屏监控大屏主控程序
-├── requirements.txt            # 项目依赖说明书
-└── .gitignore                  # Git 忽略配置
+│   └── test_headless.py        # 板端无界面自检入口
+├── utils/                      # 单层方法文件目录
+│   ├── camera_worker.py
+│   ├── db_manager.py
+│   ├── detect_plate_rdk.py
+│   ├── gui_theme.py
+│   ├── inference.py
+│   ├── plate_utils.py
+│   ├── preprocess.py
+│   ├── postprocess.py
+│   └── ultralytics_yolo_pose.py
+├── main.py                     # PyQt5 主程序入口
+├── requirements.txt
+└── .gitignore
 ```
 
-面向后续开发的模块职责与数据流说明见 [`docs/REPO_MAP.md`](docs/REPO_MAP.md)。
+`utils/` 保持单层目录，避免方法文件分散。各文件职责见 [`utils/README.md`](utils/README.md)。
 
----
+## 环境准备
 
-## 4. 快速运行指南
+基础依赖：
 
-### 4.1 安装依赖
-在项目目录下运行以下命令安装基础依赖包：
 ```bash
 pip3 install -r requirements.txt
 ```
 
-### 4.2 本地测试 (PC 端模拟运行)
-如果在开发机电脑上测试，请确保您在 `requirements.txt` 中取消了可选依赖（`ultralytics`, `paddleocr`）的注释并正确完成安装：
+PC 端推理还需要安装 `ultralytics`、`paddlepaddle`、`paddleocr`。这些依赖在 `requirements.txt` 中作为可选项注释，按本机环境安装即可。
+
+RDK X5 板端推理需要系统中可导入 `hbm_runtime`，并确保 `models/` 下的 BPU `.bin` 模型存在。
+
+Windows PowerShell 可把下面命令里的 `python3` 换成 `python`。
+
+## 运行方式
+
+### PC 端模拟运行
+
 ```bash
-# 启动本地模拟。使用 PC 后端，输入两个测试图片（模拟 2 路通道监控画面）
 python3 main.py \
   --backend pc \
   --inputs assets/test_plate.jpg assets/test_plate2.jpg \
   --yolo-model models/yolo11m-pose-carplate.pt
 ```
 
-### 4.3 板端 SSH 终端自检 (无界面模式)
-若通过 SSH 连接到地瓜派（RDK X5），且没有接 HDMI 屏幕，可以使用 `test/test_headless.py` 进行逻辑联调自检（会自动启动 Qt 事件循环和线程，在后台做车牌检测并写进 SQLite 数据库）：
+说明：
+
+- `--backend pc` 会初始化 YOLO + PaddleOCR。
+- `--inputs` 最多读取 4 路，顺序对应 1 到 4 号摄像头。
+- 图片源会通过 OpenCV 读取，适合开发机快速看 UI 和流程。
+
+### RDK X5 无界面自检
+
 ```bash
 python3 test/test_headless.py \
   --backend bpu \
@@ -86,16 +105,63 @@ python3 test/test_headless.py \
   --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
   --lpr-bin models/lpr.bin
 ```
-*(运行 20 秒后会自动退出，并在当前目录生成 `headless_test.db`，控制台会输出完整的检测识别日志。)*
 
-### 4.4 板端全功能大屏运行 (外接显示器模式)
-如果开发板外接了 HDMI 显示屏幕，可以通过以下命令直接拉起全屏深色科技风的监控台：
+脚本会运行约 20 秒，输出检测日志，并生成 `headless_test.db`。该数据库已被 `.gitignore` 忽略。
+
+### RDK X5 全屏监控台
+
 ```bash
-# 指定 BPU 加速，并传入两个输入源（例如 /dev/video0 和测试视频），其余通道显示离线占位画面
 DISPLAY=:0 python3 main.py \
   --backend bpu \
   --inputs /dev/video0 assets/test_plate.jpg \
   --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
   --lpr-bin models/lpr.bin
 ```
-*(查询框输入车牌并按回车即可查找最后出现的摄像头、通行时间及车牌裁切小图。Esc 键可退出全屏监控台。)*
+
+使用方式：
+
+- 查询框输入车牌并回车，右侧面板会显示末次摄像头、时间和车牌裁切图。
+- 按 `Esc` 退出全屏程序。
+- 未配置输入源的通道显示离线占位图。
+
+### 独立车牌识别 CLI
+
+`utils/detect_plate_rdk.py` 可单独处理图片、目录、视频或摄像头，适合调试模型和裁切参数：
+
+```bash
+python3 utils/detect_plate_rdk.py assets/test_plate.jpg \
+  --model models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
+  --rec-model models/lpr.bin \
+  --no-show
+```
+
+## 测试
+
+轻量验证命令：
+
+```bash
+python3 -m py_compile main.py utils/*.py test/test_headless.py
+python3 main.py --help
+python3 test/test_headless.py --help
+python3 utils/detect_plate_rdk.py --help
+```
+
+更多测试说明见 [`docs/TESTING.md`](docs/TESTING.md)。
+
+## 数据与生成物
+
+- 主程序默认数据库：`vehicle_locator.db`。
+- 无界面自检数据库：`headless_test.db`。
+- 独立识别 CLI 默认输出目录：`output_results/` 或输入目录下的输出目录。
+- 车牌裁切调试目录：`plate_crops/`。
+
+这些运行生成物均不应提交，已在 `.gitignore` 中忽略。
+
+## 开发约定
+
+- 根目录保留 `main.py` 作为主入口。
+- 方法文件统一放在单层 `utils/` 下。
+- 测试和自检入口放在 `test/` 下。
+- 车牌几何裁切、文本清洗、图片读写和绘制工具统一放在 `utils/plate_utils.py`。
+- BPU runtime 相关封装保持在 `utils/ultralytics_yolo_pose.py` 和 `utils/detect_plate_rdk.py`。
+- 修改目录结构后，至少运行 `docs/TESTING.md` 中的轻量测试。
