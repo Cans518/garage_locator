@@ -6,6 +6,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from PIL import Image
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
@@ -168,6 +169,15 @@ def add_image(doc: Document, path: Path, width_cm: float, caption: str) -> None:
 def figure_path(name: str) -> Path:
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
     return ASSET_DIR / name
+
+
+def docx_safe_image(source: Path, name: str) -> Path:
+    path = figure_path(name)
+    if not source.exists():
+        return source
+    with Image.open(source) as image:
+        image.convert("RGB").save(path, "PNG")
+    return path
 
 
 def save_metric_dashboard(df: pd.DataFrame) -> Path:
@@ -365,6 +375,87 @@ def save_backend_pipeline_diagram() -> Path:
     return path
 
 
+def save_effect_diagram() -> Path:
+    path = figure_path("implementation_effect_diagram.png")
+    fig, ax = plt.subplots(figsize=(13, 7), dpi=180)
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 8)
+    ax.axis("off")
+    ax.set_title("Implementation Effect: Web Console, Query Result, Route and Logs", fontsize=16, fontweight="bold", pad=18)
+
+    draw_box(ax, (0.5, 5.4), (2.6, 1.4), "Monitor Grid", "4 camera tiles with annotated frames", "#1e40af", "#eff6ff")
+    draw_box(ax, (4.0, 5.4), (2.6, 1.4), "Live Events", "latest runtime events and timestamps", "#047857", "#ecfdf5")
+    draw_box(ax, (7.5, 5.4), (2.6, 1.4), "Search Panel", "plate input, state and suggestions", "#9a3412", "#fff7ed")
+    draw_box(ax, (10.9, 5.4), (2.6, 1.4), "Location Result", "camera id, last seen time and crop", "#5b21b6", "#f5f3ff")
+    draw_box(ax, (2.4, 2.4), (3.1, 1.4), "Route Map", "highlight path from entrance to C1-C4", "#155e75", "#ecfeff")
+    draw_box(ax, (6.6, 2.4), (3.1, 1.4), "SQLite History", "vehicle_history keeps durable records", "#334155", "#f8fafc")
+    draw_box(ax, (10.6, 2.4), (2.8, 1.4), "Fallback Demo", "asset images and database-only mode", "#b45309", "#fffbeb")
+
+    arrow(ax, (3.1, 6.1), (4.0, 6.1))
+    arrow(ax, (6.6, 6.1), (7.5, 6.1))
+    arrow(ax, (10.1, 6.1), (10.9, 6.1))
+    arrow(ax, (12.2, 5.4), (8.2, 3.8), "#7c3aed")
+    arrow(ax, (8.15, 5.4), (8.15, 3.8), "#059669")
+    arrow(ax, (6.6, 3.1), (5.5, 3.1), "#059669")
+    arrow(ax, (9.7, 3.1), (10.6, 3.1), "#64748b")
+
+    ax.text(
+        0.55,
+        0.75,
+        "User-visible effect: operators enter a plate number, see the latest camera position, inspect the cropped plate image, and follow the highlighted route.",
+        fontsize=10,
+        color="#475569",
+    )
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def save_end_to_end_logic_diagram() -> Path:
+    path = figure_path("end_to_end_logic_diagram.png")
+    fig, ax = plt.subplots(figsize=(13, 7), dpi=180)
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 8)
+    ax.axis("off")
+    ax.set_title("End-to-End Implementation Logic", fontsize=16, fontweight="bold", pad=18)
+
+    top_nodes = [
+        ("1 Source", "camera / RTSP / video / image", "#1e40af", "#eff6ff"),
+        ("2 Capture", "CameraCaptureThread reads frames", "#115e59", "#f0fdfa"),
+        ("3 Buffer", "LatestFrameBuffer keeps newest frame", "#155e75", "#ecfeff"),
+        ("4 Detect", "Detector.detect frame", "#9a3412", "#fff7ed"),
+    ]
+    bottom_nodes = [
+        ("8 UI", "route, logs, crop and camera tiles", "#5b21b6", "#f5f3ff"),
+        ("7 API", "/api/events and /api/search", "#047857", "#ecfdf5"),
+        ("6 Store", "record_occurrence() to SQLite", "#334155", "#f8fafc"),
+        ("5 Result", "DetectionResult box, pts, text, crop", "#b45309", "#fffbeb"),
+    ]
+    for i, (title, subtitle, color, face) in enumerate(top_nodes):
+        draw_box(ax, (0.45 + i * 3.35, 5.4), (2.65, 1.35), title, subtitle, color, face)
+        if i < len(top_nodes) - 1:
+            arrow(ax, (3.1 + i * 3.35, 6.08), (3.8 + i * 3.35, 6.08))
+
+    for i, (title, subtitle, color, face) in enumerate(bottom_nodes):
+        draw_box(ax, (0.45 + i * 3.35, 2.3), (2.65, 1.35), title, subtitle, color, face)
+        if i < len(bottom_nodes) - 1:
+            arrow(ax, (3.8 + i * 3.35, 2.98), (3.1 + i * 3.35, 2.98))
+
+    arrow(ax, (12.5, 5.4), (12.5, 3.65), "#059669")
+    ax.text(
+        0.5,
+        1.0,
+        "The runtime separates realtime capture, model inference, persistence and presentation so each part can be tested and replaced independently.",
+        fontsize=10,
+        color="#475569",
+    )
+    fig.tight_layout()
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def configure_doc(doc: Document) -> None:
     sec = doc.sections[0]
     sec.top_margin = Cm(1.8)
@@ -424,6 +515,8 @@ def build_report() -> None:
         "architecture": save_architecture_diagram(),
         "threading": save_thread_diagram(),
         "backend": save_backend_pipeline_diagram(),
+        "effect": save_effect_diagram(),
+        "logic": save_end_to_end_logic_diagram(),
     }
 
     hero = ROOT / "docs" / "tutorial-assets" / "garage-ai-system.png"
@@ -457,8 +550,111 @@ def build_report() -> None:
         [4.0, 12.8],
     )
 
-    add_heading(doc, "二、系统总体架构", 1)
-    add_image(doc, assets["architecture"], 16.5, "图 2  系统总体架构：采集、推理、存储与 Web 控制台")
+    add_table(
+        doc,
+        ["背景问题", "项目响应"],
+        [
+            ["车主或管理人员无法快速知道车辆最后出现在哪个区域", "以车牌为索引，记录车辆每次被摄像头识别到的位置，查询时返回最后出现摄像头和时间。"],
+            ["地下车库点位多、视频源类型不统一", "输入层统一支持摄像头编号、RTSP、视频文件和图片，后续流程按统一帧对象处理。"],
+            ["现场部署可能无法依赖高性能 GPU", "保留 PC 后端用于开发验证，同时提供 RDK X5 BPU 后端用于边缘侧部署。"],
+            ["只看模型输出不够，运维需要可解释的事件链", "页面同时展示监控帧、通行日志、车牌裁切图、路径高亮和接口状态。"],
+            ["长时间运行需要可恢复的数据", "识别事件写入 SQLite，服务重启后仍可通过数据库查询最近记录。"],
+        ],
+        [5.3, 11.5],
+    )
+
+    add_heading(doc, "二、实现效果与交付形态", 1)
+    add_image(doc, assets["effect"], 16.5, "图 2  实现效果：Web 控制台、查询结果、路线图和通行日志")
+    add_paragraph(
+        doc,
+        "项目最终交付形态是一个可直接运行的地库车辆定位控制台。操作者打开浏览器或桌面 WebView 后，可以看到 4 路监控画面区域、实时通行日志、车辆快速查询表单、车辆最后出现位置、车牌裁切图以及路线示意。"
+        "这类页面效果的重点不是做静态展示，而是把识别链路产生的数据持续映射为可操作的信息：哪辆车、在哪个摄像头、什么时间出现、是否有可核验的车牌截图。"
+    )
+    add_paragraph(
+        doc,
+        "在后台推理运行时开启时，页面每 8 秒调用 `/api/events` 刷新监控画面和事件列表；用户输入车牌后调用 `/api/search`，服务端从 SQLite 中按时间和写入顺序返回最新位置。"
+        "如果推理运行时未开启，页面仍能进入数据库浏览模式，并使用 `assets/` 中的样例图填充监控区，便于演示和排障。"
+    )
+    add_table(
+        doc,
+        ["效果维度", "用户可见结果", "背后实现"],
+        [
+            ["实时监控", "页面显示 C1-C4 摄像头 tile，画面带检测框、角点和识别文本。", "`/api/events` 返回 `cameraImages`，后台使用 `draw_annotations()` 生成标注帧并编码为 data URL。"],
+            ["车辆定位", "输入车牌后显示最后出现摄像头、时间和状态“已定位”。", "`/api/search` 调用 `query_last_location()`，按 `timestamp DESC, id DESC` 取最新记录。"],
+            ["路线提示", "地库平面示意图中高亮入口到目标摄像头的路径。", "前端 `showRoute()` 根据 cameraId 设置 SVG path，并激活对应摄像头点位。"],
+            ["车牌核验", "查询结果展示车牌裁切图，便于人工确认识别是否可信。", "数据库 `crop_image` 字段保存 JPEG BLOB，接口转为 base64 data URL。"],
+            ["事件追踪", "通行日志持续显示最近识别事件。", "运行时保留最近 100 条事件，数据库可查询最近历史记录。"],
+            ["演示降级", "无摄像头或不启用模型时仍可打开页面和查看样例。", "`--backend none` 或无运行时快照时，接口回退到数据库记录和 `asset_images()`。"],
+        ],
+        [3.4, 6.0, 7.3],
+    )
+    add_heading(doc, "2.1 页面交互流程", 2)
+    add_table(
+        doc,
+        ["交互步骤", "页面表现", "接口和状态变化"],
+        [
+            ["打开首页", "显示查询卡片、路线图、摄像头网格和事件列表。", "静态文件由 `GarageWebHandler.serve_file()` 提供；`loadEvents()` 立即拉取 `/api/events`。"],
+            ["后台刷新", "摄像头画面和日志周期更新。", "前端 `setInterval(loadEvents, 8_000)`；接口返回 `stats.channels`、`stats.records`、`latency` 和 `errors`。"],
+            ["输入车牌", "结果状态从“等待查询”变为“查询中”。", "前端将输入值 `trim().toUpperCase()` 后编码到 `/api/search?plate=`。"],
+            ["查到车辆", "显示车牌号、C 号摄像头、最后时间、裁切图和路线。", "接口返回 `ok=true` 与 `result`；前端调用 `setCrop()` 和 `showRoute()`。"],
+            ["未查到车辆", "显示“未找到”或相近车牌建议。", "接口返回 `ok=false`；服务端 `query_fuzzy()` 最多给出 6 条相近最新记录。"],
+        ],
+        [3.1, 5.7, 8.0],
+    )
+    add_image(doc, docx_safe_image(ROOT / "assets" / "test_plate.jpg", "sample_test_plate.png"), 11.5, "图 3  输入样例 1：用于 PC/RDK 识别链路演示的车牌图片")
+    add_image(doc, docx_safe_image(ROOT / "assets" / "test_plate2.jpg", "sample_test_plate2.png"), 11.5, "图 4  输入样例 2：用于验证多图片输入和数据库记录写入")
+
+    add_heading(doc, "三、端到端实现逻辑", 1)
+    add_image(doc, assets["logic"], 16.5, "图 5  端到端实现逻辑：输入源、采集、推理、入库、API 与前端")
+    add_paragraph(
+        doc,
+        "系统实现逻辑可以概括为“视频帧进入、模型识别、事件落库、接口读取、页面展示”。"
+        "每个环节都尽量保持职责单一：采集线程只负责拿到最新帧，推理线程负责调用模型并形成事件，数据库负责持久化，HTTP 请求只读取快照或数据库结果。"
+    )
+    add_table(
+        doc,
+        ["步骤", "输入", "核心处理", "输出或状态"],
+        [
+            ["1. 输入源归一化", "摄像头编号、RTSP URL、图片或视频文件", "`build_default_sources()` 和命令行 `--inputs` 统一转成 source 列表", "最多 4 路 source，空位可跳过"],
+            ["2. 采集", "source", "`CameraCaptureThread.run()` 循环读取帧；图片源按 1 秒间隔重复投递，视频读完后循环", "OpenCV BGR frame"],
+            ["3. 最新帧缓冲", "camera_id + frame", "`LatestFrameBuffer.put()` 覆盖旧帧并 set Event", "每路只保留最新帧，避免积压"],
+            ["4. 推理", "批量取出的最新帧", "`detector.detect(frame)` 调用 PC 或 BPU 后端", "`DetectionResult[]`"],
+            ["5. 事件生成", "识别结果、摄像头编号、耗时", "过滤空文本和过短车牌，记录 latency、confidence 和时间", "运行时 events 和 annotated frame"],
+            ["6. 数据持久化", "plate_number、camera_id、crop", "`DBManager.record_occurrence()` 编码 JPEG 并写 SQLite", "`vehicle_history` 新增一条记录"],
+            ["7. 接口服务", "HTTP GET", "`/api/events` 读运行时快照，`/api/search` 查数据库", "JSON payload"],
+            ["8. 前端呈现", "JSON payload", "更新摄像头 tile、日志、查询结果、路线和裁切图", "可被用户理解的定位结果"],
+        ],
+        [3.0, 4.2, 6.5, 4.2],
+    )
+    add_heading(doc, "3.1 核心数据对象", 2)
+    add_table(
+        doc,
+        ["对象", "字段或内容", "作用"],
+        [
+            ["DetectionResult", "`box`、`pts`、`text`、`confidence`、`crop`", "统一 PC 和 RDK 后端输出，使上层逻辑不关心模型运行平台。"],
+            ["运行时快照", "`cameraImages`、`events`、`latency`、`errors`、`running`", "HTTP 线程读取复制后的状态，避免直接操作推理线程内部对象。"],
+            ["vehicle_history", "`id`、`plate_number`、`camera_id`、`timestamp`、`crop_image`", "保存车辆历史轨迹；`id` 让同一秒内多条记录也能稳定排序。"],
+            ["/api/events", "events、cameraImages、stats、latency、errors", "提供首页实时监控所需全部数据。"],
+            ["/api/search", "ok、query、result、suggestions", "提供精确查询结果或模糊建议。"],
+        ],
+        [3.5, 6.4, 6.8],
+    )
+    add_heading(doc, "3.2 关键实现规则", 2)
+    add_table(
+        doc,
+        ["规则", "原因", "对应代码"],
+        [
+            ["只处理每路最新帧", "地库监控更看重当前状态，旧帧积压会造成定位延迟。", "`LatestFrameBuffer` 覆盖写入，`get_all()` 复制后清空。"],
+            ["推理线程串行调用模型", "减少模型 runtime 并发风险，特别是 BPU runtime 资源更适合集中调用。", "`WebInferenceRuntime._run_inference()` 逐 camera_id 调用 `detect()`。"],
+            ["HTTP 只读快照或短连接查库", "避免 Web 请求阻塞采集和推理线程。", "`snapshot()` 复制状态；查询函数使用局部 sqlite3 连接。"],
+            ["事件和错误有限保留", "控制内存增长，前端只需要近期状态。", "`events[:100]` 和 `errors[-20:]`。"],
+            ["短文本过滤", "降低误识别写入数据库的概率。", "`if not result.text or len(result.text) < 4: continue`。"],
+        ],
+        [4.0, 6.0, 6.5],
+    )
+
+    add_heading(doc, "四、系统总体架构", 1)
+    add_image(doc, assets["architecture"], 16.5, "图 6  系统总体架构：采集、推理、存储与 Web 控制台")
     add_paragraph(
         doc,
         "系统以 `web_app.py` 为主要服务入口。HTTP 服务提供静态页面和 `/api/events`、`/api/search` 两个核心接口；"
@@ -477,10 +673,10 @@ def build_report() -> None:
         [3.2, 6.2, 7.0],
     )
     if deploy_img.exists():
-        add_image(doc, deploy_img, 16.5, "图 3  PC 开发环境与 RDK X5 部署环境示意")
+        add_image(doc, deploy_img, 16.5, "图 7  PC 开发环境与 RDK X5 部署环境示意")
 
-    add_heading(doc, "三、推理后端设计", 1)
-    add_image(doc, assets["backend"], 16.5, "图 4  PC 与 RDK BPU 推理后端处理链")
+    add_heading(doc, "五、推理后端设计", 1)
+    add_image(doc, assets["backend"], 16.5, "图 8  PC 与 RDK BPU 推理后端处理链")
     add_paragraph(
         doc,
         "推理层的核心设计是统一接口：`VehiclePlateDetector.detect(frame)` 接收一帧 OpenCV BGR 图像，返回 `DetectionResult[]`。"
@@ -498,14 +694,14 @@ def build_report() -> None:
         ],
         [3.0, 6.0, 7.0],
     )
-    add_heading(doc, "3.1 PCDetectionBackend", 2)
+    add_heading(doc, "5.1 PCDetectionBackend", 2)
     add_paragraph(
         doc,
         "PC 后端使用 `ultralytics.YOLO` 加载 `models/yolo11m-pose-carplate.pt`，从 `result.keypoints.xy` 取得车牌四角关键点，"
         "从 `result.boxes.xyxy` 取得检测框，然后通过 `crop_plate()` 生成透视矫正后的车牌图。字符识别阶段兼容 PaddleOCR 2.x 与 3.x："
         "若 OCR 对象提供 `predict()` 则优先使用新接口，否则退回 `ocr(det=False, cls=False)`。"
     )
-    add_heading(doc, "3.2 BPUDetectionBackend", 2)
+    add_heading(doc, "5.2 BPUDetectionBackend", 2)
     add_paragraph(
         doc,
         "RDK 后端首先确认 `hbm_runtime` 可导入，再创建 `UltralyticsYOLOPose` 和 `LPRNetRecognizer`。"
@@ -513,8 +709,8 @@ def build_report() -> None:
         "裁切出的车牌图再送入 LPRNet `.bin`，通过字符表解码并计算平均置信度。"
     )
 
-    add_heading(doc, "四、线程安排与通信机制", 1)
-    add_image(doc, assets["threading"], 16.5, "图 5  后台线程和 HTTP 请求之间的通信模型")
+    add_heading(doc, "六、线程安排与通信机制", 1)
+    add_image(doc, assets["threading"], 16.5, "图 9  后台线程和 HTTP 请求之间的通信模型")
     add_paragraph(
         doc,
         "系统的实时性来自两个约束：采集线程不做推理，推理线程只处理每路最新帧。"
@@ -532,13 +728,29 @@ def build_report() -> None:
         [3.0, 5.0, 6.0, 4.2],
     )
 
-    add_heading(doc, "五、模型训练与结果分析", 1)
+    add_heading(doc, "七、模型训练与结果分析", 1)
     add_paragraph(
         doc,
         f"训练输出位于 `train/`。本次训练任务为 `{args.get('task', 'pose')}`，模型基座为 `{args.get('model', 'unknown')}`，"
         f"训练轮数为 {int(final['epoch'])}，图像尺寸 {args.get('imgsz', '640')}，batch 为 {args.get('batch', 'unknown')}，设备配置为 `{args.get('device', 'unknown')}`。"
         f"`results.csv` 共记录 {len(df)} 个 epoch，最终累计训练时间约 {total_hours:.2f} 小时。"
     )
+    add_heading(doc, "7.1 训练配置与设计理由", 2)
+    add_table(
+        doc,
+        ["训练项", "配置或数据", "工程意义"],
+        [
+            ["任务类型", args.get("task", "pose"), "使用 pose 任务同时预测车牌框和四个角点，服务后续透视裁切。"],
+            ["基座模型", args.get("model", "yolo11m-pose.pt"), "中等规模模型兼顾检测能力和可部署性，后续可转换为 RDK BPU `.bin`。"],
+            ["训练轮数", f"{int(final['epoch'])} epochs", "长轮次训练用于让关键点回归充分稳定，避免只获得粗略检测框。"],
+            ["输入尺寸", str(args.get("imgsz", "640")), "640 输入与 BPU 部署模型尺寸一致，降低训练和部署之间的尺度差异。"],
+            ["Batch / 设备", f"batch={args.get('batch', 'unknown')}，device={args.get('device', 'unknown')}", "多卡大 batch 提升训练吞吐，适合 400 轮长训练。"],
+            ["AMP", str(args.get("amp", "true")), "混合精度降低显存压力，提高训练速度。"],
+            ["输出证据", "results.csv、results.png、PR 曲线、混淆矩阵、train/val batch 图片", "报告中的图表均来自 `train/`，可追溯训练过程和最终效果。"],
+        ],
+        [3.3, 5.4, 8.0],
+    )
+    add_heading(doc, "7.2 指标表现与工程含义", 2)
     add_table(
         doc,
         ["指标", "最终 epoch", "最佳值 / 说明"],
@@ -554,9 +766,20 @@ def build_report() -> None:
         ],
         [4.0, 4.2, 8.4],
     )
-    add_image(doc, assets["bars"], 16.5, "图 6  最终 epoch 关键指标柱状图")
-    add_image(doc, assets["metrics"], 16.5, "图 7  训练过程中的检测框与关键点指标曲线")
-    add_image(doc, assets["losses"], 16.5, "图 8  训练与验证损失曲线")
+    add_table(
+        doc,
+        ["观察结论", "数据依据", "对系统效果的影响"],
+        [
+            ["检测框已经充分收敛", f"最终 Box mAP50={final['metrics/mAP50(B)']:.5f}，最佳 Box mAP50={best_box['metrics/mAP50(B)']:.5f}", "车牌区域能稳定被框出，是后续裁切和识别的前提。"],
+            ["关键点质量更接近部署目标", f"最终 Pose mAP50-95={final['metrics/mAP50-95(P)']:.5f}", "四角点越稳定，透视矫正后的车牌越平整，OCR/LPRNet 越容易识别。"],
+            ["训练后期仍有小幅提升", f"最佳 Pose mAP50 出现在 epoch {int(best_pose['epoch'])}", "说明长轮次训练对关键点回归仍有收益。"],
+            ["验证损失和训练损失存在差距", f"最终 val/cls_loss={final['val/cls_loss']:.5f}，train/cls_loss={final['train/cls_loss']:.5f}", "现场仍需保留裁切图和日志，便于发现反光、遮挡、夜间等域外情况。"],
+        ],
+        [4.2, 5.8, 6.8],
+    )
+    add_image(doc, assets["bars"], 16.5, "图 10  最终 epoch 关键指标柱状图")
+    add_image(doc, assets["metrics"], 16.5, "图 11  训练过程中的检测框与关键点指标曲线")
+    add_image(doc, assets["losses"], 16.5, "图 12  训练与验证损失曲线")
     add_paragraph(
         doc,
         f"从首轮到最终轮，训练 box loss 由 {first['train/box_loss']:.5f} 降至 {final['train/box_loss']:.5f}，"
@@ -564,19 +787,19 @@ def build_report() -> None:
         "曲线显示模型在前期快速收敛，后期主要体现为小幅稳定优化。Pose 指标高于检测框 mAP50-95 的稳定度，对后续透视裁切和字符识别具有直接价值。"
     )
 
-    add_heading(doc, "5.1 训练可视化样例", 2)
+    add_heading(doc, "7.3 训练可视化样例", 2)
     image_rows = [
-        (TRAIN_DIR / "labels.jpg", "图 9  数据集标签分布和标注质量概览"),
-        (TRAIN_DIR / "results.png", "图 10  Ultralytics 原始训练结果总览图"),
-        (TRAIN_DIR / "confusion_matrix_normalized.png", "图 11  归一化混淆矩阵"),
-        (TRAIN_DIR / "PosePR_curve.png", "图 12  关键点 PR 曲线"),
-        (TRAIN_DIR / "BoxPR_curve.png", "图 13  检测框 PR 曲线"),
-        (TRAIN_DIR / "val_batch0_pred.jpg", "图 14  验证集预测样例"),
+        (TRAIN_DIR / "labels.jpg", "图 13  数据集标签分布和标注质量概览"),
+        (TRAIN_DIR / "results.png", "图 14  Ultralytics 原始训练结果总览图"),
+        (TRAIN_DIR / "confusion_matrix_normalized.png", "图 15  归一化混淆矩阵"),
+        (TRAIN_DIR / "PosePR_curve.png", "图 16  关键点 PR 曲线"),
+        (TRAIN_DIR / "BoxPR_curve.png", "图 17  检测框 PR 曲线"),
+        (TRAIN_DIR / "val_batch0_pred.jpg", "图 18  验证集预测样例"),
     ]
     for img, caption in image_rows:
         add_image(doc, img, 15.5, caption)
 
-    add_heading(doc, "六、部署方案", 1)
+    add_heading(doc, "八、部署方案", 1)
     add_paragraph(
         doc,
         "PC 部署用于开发联调，推荐 Conda 隔离环境；RDK 部署用于现场运行，推荐使用板端系统 Python 以确保 `hbm_runtime` 可用。"
@@ -594,7 +817,7 @@ def build_report() -> None:
         [3.4, 8.2, 5.0],
     )
 
-    add_heading(doc, "七、测试、风险与改进计划", 1)
+    add_heading(doc, "九、测试、风险与改进计划", 1)
     add_paragraph(
         doc,
         "项目提供语法编译、入口参数、核心导入和数据库烟测；RDK 端还可使用 `test/test_headless.py` 在无图形界面环境中验证 BPU 后端。"
@@ -613,7 +836,7 @@ def build_report() -> None:
         [4.0, 5.2, 7.2],
     )
 
-    add_heading(doc, "八、技术参考链接", 1)
+    add_heading(doc, "十、技术参考链接", 1)
     links = [
         ("Python 官方文档", "https://docs.python.org/3/"),
         ("Conda 安装文档", "https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html"),
