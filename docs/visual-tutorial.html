@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>地库车辆定位系统可视化教程</title>
+  <meta name="description" content="地库车辆定位系统的静态可视化教程，覆盖仓库结构、技术栈、PC 部署、RDK X5 部署、数据流、测试和排障。">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-soft: #f1f5f9;
+      --ink: #0f172a;
+      --text: #1e293b;
+      --muted: #64748b;
+      --line: #d8e2ea;
+      --line-strong: #94a3b8;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --emerald: #059669;
+      --amber: #b45309;
+      --rose: #be123c;
+      --violet: #7c3aed;
+      --code-bg: #0f172a;
+      --code-fg: #e2e8f0;
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.10);
+      --radius: 8px;
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      color: #1d4ed8;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 20;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: #fff;
+      transform: translateY(-150%);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .hero {
+      min-height: 78vh;
+      display: grid;
+      align-items: end;
+      position: relative;
+      color: #fff;
+      background-image:
+        linear-gradient(90deg, rgba(2, 6, 23, 0.82) 0%, rgba(15, 23, 42, 0.64) 42%, rgba(15, 23, 42, 0.10) 100%),
+        url("tutorial-assets/garage-ai-system.png");
+      background-size: cover;
+      background-position: center;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 120px;
+      background: linear-gradient(180deg, rgba(248, 250, 252, 0), var(--bg));
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      width: min(100% - 40px, var(--max));
+      margin: 0 auto;
+      padding: 84px 0 118px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #bfdbfe;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: #22d3ee;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 820px;
+      margin-bottom: 18px;
+      font-size: clamp(38px, 7vw, 76px);
+      line-height: 1.03;
+      letter-spacing: 0;
+      color: #fff;
+    }
+
+    .hero-copy {
+      max-width: 700px;
+      margin-bottom: 28px;
+      color: #e2e8f0;
+      font-size: clamp(17px, 2vw, 21px);
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .hero-actions a,
+    .button-link {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.30);
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-actions a:first-child {
+      background: #06b6d4;
+      border-color: #22d3ee;
+      color: #082f49;
+    }
+
+    .page-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(248, 250, 252, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .page-nav nav {
+      width: min(100% - 32px, var(--max));
+      margin: 0 auto;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+
+    .page-nav a {
+      flex: 0 0 auto;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      color: #334155;
+      text-decoration: none;
+      font-weight: 650;
+      font-size: 14px;
+    }
+
+    .page-nav a:hover,
+    .page-nav a:focus {
+      background: #e0f2fe;
+      color: #075985;
+      outline: none;
+    }
+
+    main {
+      width: min(100% - 40px, var(--max));
+      margin: 0 auto;
+      padding: 46px 0 80px;
+    }
+
+    section {
+      scroll-margin-top: 88px;
+      margin-bottom: 56px;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 380px);
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .section-head h2 {
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .note {
+      padding: 14px 16px;
+      border: 1px solid #bae6fd;
+      border-left: 4px solid var(--cyan);
+      background: #f0f9ff;
+      border-radius: var(--radius);
+      color: #0c4a6e;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card,
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .card h3,
+    .panel h3 {
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-size: 19px;
+      line-height: 1.25;
+    }
+
+    .card p,
+    .panel p {
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .metric {
+      display: grid;
+      gap: 6px;
+      min-height: 128px;
+    }
+
+    .metric strong {
+      color: var(--cyan);
+      font-size: 34px;
+      line-height: 1;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      border: 1px solid #bae6fd;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag.green {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+    }
+
+    .tag.amber {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
+    .visual-card {
+      overflow: hidden;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-card img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .caption {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .diagram {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .diagram svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .diagram text {
+      font-family: "Segoe UI", "Microsoft YaHei UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .stepper {
+      counter-reset: step;
+      display: grid;
+      gap: 12px;
+    }
+
+    .step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .step h3 {
+      margin: 0 0 4px;
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    pre {
+      margin: 14px 0 0;
+      padding: 14px 16px;
+      background: var(--code-bg);
+      color: var(--code-fg);
+      overflow-x: auto;
+      border-radius: var(--radius);
+      font: 13px/1.65 Consolas, "Fira Code", "Cascadia Code", monospace;
+      white-space: pre;
+    }
+
+    code {
+      font-family: Consolas, "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.94em;
+    }
+
+    :not(pre) > code {
+      padding: 2px 5px;
+      border: 1px solid #dbeafe;
+      border-radius: 5px;
+      background: #eff6ff;
+      color: #1e40af;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: table;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .tech-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .tech-item {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .tech-item h3 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 17px;
+    }
+
+    .tech-item p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .tech-item a {
+      font-weight: 700;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 4px 1fr;
+      gap: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .callout::before {
+      content: "";
+      border-radius: 999px;
+      background: var(--emerald);
+    }
+
+    .callout.warning::before {
+      background: var(--amber);
+    }
+
+    .callout.danger::before {
+      background: var(--rose);
+    }
+
+    .callout strong {
+      color: var(--ink);
+    }
+
+    .callout p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .footer {
+      margin-top: 72px;
+      padding: 28px 0 42px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .print-only {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .section-head,
+      .grid.cols-2,
+      .grid.cols-3,
+      .grid.cols-4,
+      .tech-list {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: 70vh;
+        background-position: 58% center;
+      }
+
+      .hero-inner,
+      main {
+        width: min(100% - 28px, var(--max));
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .hero,
+      .page-nav {
+        display: none;
+      }
+
+      main {
+        width: 100%;
+        padding: 0;
+      }
+
+      section {
+        break-inside: avoid;
+        margin-bottom: 28px;
+      }
+
+      .card,
+      .panel,
+      .diagram,
+      .visual-card {
+        box-shadow: none;
+      }
+
+      a {
+        color: #000;
+      }
+
+      .print-only {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow">Garage Locator Visual Guide</span>
+      <h1>地库车辆定位系统完整可视化教程</h1>
+      <p class="hero-copy">
+        从仓库结构、推理链路、PC 开发环境到 RDK X5 BPU 部署，把代码、模型、数据库、Web 控制台和测试流程放在一张可读的工程地图里。
+      </p>
+      <div class="hero-actions" aria-label="教程快捷入口">
+        <a href="#quickstart">开始部署</a>
+        <a href="#architecture">查看架构</a>
+        <a href="#technology">技术链接</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-nav">
+    <nav aria-label="页面导航">
+      <a href="#overview">总览</a>
+      <a href="#repository">仓库地图</a>
+      <a href="#architecture">架构</a>
+      <a href="#backend-deep-dive">后端细节</a>
+      <a href="#quickstart">PC 部署</a>
+      <a href="#rdk">RDK 部署</a>
+      <a href="#technology">技术栈</a>
+      <a href="#testing">测试</a>
+      <a href="#troubleshooting">排障</a>
+    </nav>
+  </div>
+
+  <main id="main">
+    <p class="print-only">地库车辆定位系统完整可视化教程。HTML 文件可离线打开，图片路径位于 docs/tutorial-assets/。</p>
+
+    <section id="overview">
+      <div class="section-head">
+        <div>
+          <h2>1. 项目在做什么</h2>
+          <p>
+            本仓库把多路摄像头画面送入车牌检测和识别后端，记录车辆最后一次出现位置，并通过 Web 控制台查询车牌轨迹。PC 用 YOLO pose + PaddleOCR 调试，RDK X5 用 BPU `.bin` 模型部署。
+          </p>
+        </div>
+        <div class="note">
+          推荐阅读顺序：先看本页总览，再按 <a href="INSTALL_AND_DEPLOY.md">INSTALL_AND_DEPLOY.md</a> 执行真实部署命令。
+        </div>
+      </div>
+
+      <div class="grid cols-4">
+        <article class="card metric">
+          <strong>4</strong>
+          <h3>最多 4 路输入</h3>
+          <p>摄像头编号、视频文件、图片或 RTSP 地址都可作为输入源。</p>
+        </article>
+        <article class="card metric">
+          <strong>2</strong>
+          <h3>两类推理后端</h3>
+          <p>PC 后端方便开发；RDK BPU 后端用于现场部署。</p>
+        </article>
+        <article class="card metric">
+          <strong>1</strong>
+          <h3>统一数据表</h3>
+          <p>SQLite 保存车牌号、摄像头编号、时间和裁切图。</p>
+        </article>
+        <article class="card metric">
+          <strong>0</strong>
+          <h3>浏览器额外安装</h3>
+          <p>Web 控制台通过 HTTP 提供页面和 API，浏览器直接访问。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="repository">
+      <div class="section-head">
+        <div>
+          <h2>2. 仓库结构怎么读</h2>
+          <p>把仓库分成入口、业务模块、板端适配、静态前端、模型资源和文档六类，能快速定位修改点。</p>
+        </div>
+        <div class="callout">
+          <p><strong>维护规则：</strong>入口变更后同步更新 README、仓库地图、测试说明和本可视化教程。</p>
+        </div>
+      </div>
+
+      <div class="diagram" role="img" aria-label="仓库结构关系图">
+        <svg viewBox="0 0 1180 560" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1180" height="560" fill="#ffffff"/>
+          <text x="52" y="58" font-size="28" font-weight="800" fill="#0f172a">garage_locator/ 仓库地图</text>
+          <text x="52" y="88" font-size="15" fill="#64748b">入口脚本调用 utils 模块，Web 页面通过 API 读取推理结果和 SQLite 数据。</text>
+
+          <g transform="translate(52 124)">
+            <rect width="230" height="132" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#1e40af">入口</text>
+            <text x="18" y="64" font-size="14" fill="#1e3a8a">web_app.py</text>
+            <text x="18" y="88" font-size="14" fill="#1e3a8a">webview_app.py</text>
+            <text x="18" y="112" font-size="14" fill="#1e3a8a">test/test_headless.py</text>
+          </g>
+
+          <g transform="translate(352 104)">
+            <rect width="290" height="172" rx="8" fill="#f0fdfa" stroke="#99f6e4"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#115e59">utils/ 核心模块</text>
+            <text x="18" y="64" font-size="14" fill="#134e4a">inference.py：PC / BPU 后端</text>
+            <text x="18" y="88" font-size="14" fill="#134e4a">db_manager.py：SQLite</text>
+            <text x="18" y="112" font-size="14" fill="#134e4a">plate_utils.py：裁切和清洗</text>
+            <text x="18" y="136" font-size="14" fill="#134e4a">preprocess/postprocess：RDK YOLO</text>
+          </g>
+
+          <g transform="translate(730 124)">
+            <rect width="200" height="132" rx="8" fill="#f5f3ff" stroke="#ddd6fe"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#5b21b6">前端</text>
+            <text x="18" y="64" font-size="14" fill="#4c1d95">web/index.html</text>
+            <text x="18" y="88" font-size="14" fill="#4c1d95">web/app.js</text>
+            <text x="18" y="112" font-size="14" fill="#4c1d95">web/styles.css</text>
+          </g>
+
+          <g transform="translate(52 340)">
+            <rect width="230" height="122" rx="8" fill="#fff7ed" stroke="#fed7aa"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#9a3412">模型</text>
+            <text x="18" y="64" font-size="14" fill="#7c2d12">YOLO pose .pt / .bin</text>
+            <text x="18" y="88" font-size="14" fill="#7c2d12">LPRNet lpr.bin</text>
+          </g>
+
+          <g transform="translate(352 340)">
+            <rect width="290" height="122" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#334155">运行数据</text>
+            <text x="18" y="64" font-size="14" fill="#475569">vehicle_locator.db</text>
+            <text x="18" y="88" font-size="14" fill="#475569">车牌裁切图、最近位置、日志</text>
+          </g>
+
+          <g transform="translate(730 340)">
+            <rect width="360" height="122" rx="8" fill="#ecfdf5" stroke="#bbf7d0"/>
+            <text x="18" y="34" font-size="18" font-weight="800" fill="#047857">文档</text>
+            <text x="18" y="64" font-size="14" fill="#065f46">INSTALL_AND_DEPLOY.md</text>
+            <text x="18" y="88" font-size="14" fill="#065f46">REPO_MAP.md / TESTING.md / visual-tutorial.html</text>
+          </g>
+
+          <g stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrow)">
+            <path d="M282 190 H352"/>
+            <path d="M642 190 H730"/>
+            <path d="M497 276 V340"/>
+            <path d="M282 401 H352"/>
+            <path d="M642 401 H730"/>
+            <path d="M167 340 V256"/>
+          </g>
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <div class="section-head">
+        <div>
+          <h2>3. 推理和查询链路</h2>
+          <p>系统把“视频帧”变成“可查询的最后位置”。下图对应 `web_app.py` 的运行时和 `utils/inference.py` 的后端抽象。</p>
+        </div>
+        <div class="visual-card">
+          <img src="tutorial-assets/pc-rdk-deployment.png" alt="PC 开发环境和 RDK X5 板端部署场景示意">
+          <div class="caption">生成图用于展示 PC 与 RDK 双环境；精确流程以 SVG 图和代码为准。</div>
+        </div>
+      </div>
+
+      <div class="diagram" role="img" aria-label="系统数据流和推理流程图">
+        <svg viewBox="0 0 1180 500" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1180" height="500" fill="#ffffff"/>
+          <text x="52" y="54" font-size="26" font-weight="800" fill="#0f172a">从画面到定位结果</text>
+          <text x="52" y="82" font-size="15" fill="#64748b">每路输入只保留最新帧，推理线程串行处理，避免视频积压和 BPU 资源冲突。</text>
+
+          <defs>
+            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+            </marker>
+          </defs>
+
+          <g transform="translate(46 130)">
+            <rect width="150" height="84" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+            <text x="75" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#1e40af">输入源</text>
+            <text x="75" y="58" text-anchor="middle" font-size="13" fill="#1e3a8a">摄像头 / 视频 / 图片</text>
+          </g>
+          <g transform="translate(250 130)">
+            <rect width="170" height="84" rx="8" fill="#f0fdfa" stroke="#99f6e4"/>
+            <text x="85" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#115e59">采集线程</text>
+            <text x="85" y="58" text-anchor="middle" font-size="13" fill="#134e4a">CameraCaptureThread</text>
+          </g>
+          <g transform="translate(480 130)">
+            <rect width="170" height="84" rx="8" fill="#ecfeff" stroke="#a5f3fc"/>
+            <text x="85" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#155e75">最新帧槽位</text>
+            <text x="85" y="58" text-anchor="middle" font-size="13" fill="#164e63">LatestFrameBuffer</text>
+          </g>
+          <g transform="translate(710 130)">
+            <rect width="180" height="84" rx="8" fill="#fff7ed" stroke="#fed7aa"/>
+            <text x="90" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#9a3412">推理后端</text>
+            <text x="90" y="58" text-anchor="middle" font-size="13" fill="#7c2d12">PCDetection / BPUDetection</text>
+          </g>
+          <g transform="translate(950 130)">
+            <rect width="180" height="84" rx="8" fill="#f5f3ff" stroke="#ddd6fe"/>
+            <text x="90" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#5b21b6">识别结果</text>
+            <text x="90" y="58" text-anchor="middle" font-size="13" fill="#4c1d95">DetectionResult[]</text>
+          </g>
+
+          <g transform="translate(250 304)">
+            <rect width="210" height="98" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+            <text x="105" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#334155">SQLite 轨迹库</text>
+            <text x="105" y="60" text-anchor="middle" font-size="13" fill="#475569">vehicle_locator.db</text>
+            <text x="105" y="80" text-anchor="middle" font-size="13" fill="#475569">最后位置查询</text>
+          </g>
+          <g transform="translate(552 304)">
+            <rect width="210" height="98" rx="8" fill="#ecfdf5" stroke="#bbf7d0"/>
+            <text x="105" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#047857">Web API</text>
+            <text x="105" y="60" text-anchor="middle" font-size="13" fill="#065f46">/api/events</text>
+            <text x="105" y="80" text-anchor="middle" font-size="13" fill="#065f46">/api/search</text>
+          </g>
+          <g transform="translate(854 304)">
+            <rect width="210" height="98" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+            <text x="105" y="34" text-anchor="middle" font-size="16" font-weight="800" fill="#1e40af">Web 控制台</text>
+            <text x="105" y="60" text-anchor="middle" font-size="13" fill="#1e3a8a">监控展示 / 日志</text>
+            <text x="105" y="80" text-anchor="middle" font-size="13" fill="#1e3a8a">路径示意 / 查询</text>
+          </g>
+
+          <g stroke="#64748b" stroke-width="2.2" fill="none" marker-end="url(#arrow2)">
+            <path d="M196 172 H250"/>
+            <path d="M420 172 H480"/>
+            <path d="M650 172 H710"/>
+            <path d="M890 172 H950"/>
+            <path d="M1040 214 C1040 258 960 258 960 304"/>
+            <path d="M950 214 C950 262 390 250 356 304"/>
+            <path d="M460 353 H552"/>
+            <path d="M762 353 H854"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="grid cols-3" style="margin-top:16px">
+        <article class="card">
+          <h3>PC 后端</h3>
+          <p>`ultralytics` 加载 `.pt` 模型，PaddleOCR 识别裁切后的车牌文本，适合开发和演示。</p>
+          <div class="tag-row"><span class="tag">YOLO pose</span><span class="tag">PaddleOCR</span></div>
+        </article>
+        <article class="card">
+          <h3>RDK BPU 后端</h3>
+          <p>`hbm_runtime` 加载 YOLO `.bin`，LPRNet `.bin` 负责字符识别，适合板端部署。</p>
+          <div class="tag-row"><span class="tag green">BPU</span><span class="tag green">LPRNet</span></div>
+        </article>
+        <article class="card">
+          <h3>数据库查询</h3>
+          <p>`DBManager` 写入每次车牌出现事件，查询按 `timestamp DESC, id DESC` 返回末次位置。</p>
+          <div class="tag-row"><span class="tag amber">SQLite</span><span class="tag amber">crop_image</span></div>
+        </article>
+      </div>
+
+      <div id="backend-deep-dive" class="panel" style="margin-top:18px">
+        <h3>推理后端统一契约</h3>
+        <p>
+          `utils/inference.py` 用 `VehiclePlateDetector.detect(frame)` 统一 PC 和 RDK 两种后端。调用方只关心输入是一帧 OpenCV BGR 图像，输出是 `DetectionResult[]`；至于是 `.pt + PaddleOCR` 还是 `.bin + LPRNet`，都被封装在后端内部。
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>对象 / 字段</th>
+              <th>类型或来源</th>
+              <th>作用</th>
+              <th>后续去向</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>`frame`</td>
+              <td>`np.ndarray`，OpenCV BGR</td>
+              <td>单路摄像头、视频或图片当前帧</td>
+              <td>传入 `detector.detect(frame)`</td>
+            </tr>
+            <tr>
+              <td>`box`</td>
+              <td>车牌矩形框 4 点</td>
+              <td>用于画包围框，辅助前端确认检测位置</td>
+              <td>`draw_annotations()`</td>
+            </tr>
+            <tr>
+              <td>`pts`</td>
+              <td>车牌四角关键点</td>
+              <td>透视变换裁切车牌，是识别准确率的关键</td>
+              <td>`crop_plate(frame, pts)`</td>
+            </tr>
+            <tr>
+              <td>`text`</td>
+              <td>OCR / LPRNet 输出清洗结果</td>
+              <td>作为车辆轨迹主键</td>
+              <td>`DBManager.record_occurrence()` 和 `/api/events`</td>
+            </tr>
+            <tr>
+              <td>`confidence`</td>
+              <td>识别置信度</td>
+              <td>用于日志展示和调试识别质量</td>
+              <td>事件列表、标注文字</td>
+            </tr>
+            <tr>
+              <td>`crop`</td>
+              <td>透视矫正后的车牌小图</td>
+              <td>保存证据图，便于查询时回看</td>
+              <td>SQLite `crop_image` BLOB</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="panel">
+          <h3>PCDetectionBackend 执行链</h3>
+          <p>PC 后端适合开发机验证算法和 Web 页面。它的主要瓶颈通常在 YOLO 推理和 PaddleOCR 初始化/识别。</p>
+          <pre><code>frame
+  -> YOLO(yolo_model_path)(frame)
+  -> result.keypoints.xy / result.boxes.xyxy
+  -> crop_plate(frame, pts)
+  -> PaddleOCR.predict(...) 或 PaddleOCR.ocr(...)
+  -> clean_plate_number(text)
+  -> DetectionResult(box, pts, text, confidence, crop)</code></pre>
+          <div class="tag-row">
+            <span class="tag">兼容 PaddleOCR 2.x/3.x</span>
+            <span class="tag">中文车牌清洗</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>BPUDetectionBackend 执行链</h3>
+          <p>RDK 后端适合现场部署。它把检测和识别都放到 BPU runtime，避免 PC 后端依赖 PaddleOCR。</p>
+          <pre><code>frame
+  -> UltralyticsYOLOPose.predict(frame)
+     -> pre_process: BGR -> resize/letterbox -> NV12
+     -> forward: hbm_runtime.HB_HBMRuntime.run(...)
+     -> post_process: decode boxes/keypoints + NMS
+  -> crop_plate(frame, pts)
+  -> LPRNetRecognizer.recognize(crop)
+  -> clean_plate_number(text)
+  -> DetectionResult(...)</code></pre>
+          <div class="tag-row">
+            <span class="tag green">YOLO .bin</span>
+            <span class="tag green">LPRNet .bin</span>
+            <span class="tag green">NV12 输入</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram" style="margin-top:16px" role="img" aria-label="线程安排和通信关系图">
+        <svg viewBox="0 0 1180 620" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1180" height="620" fill="#ffffff"/>
+          <text x="52" y="54" font-size="26" font-weight="800" fill="#0f172a">线程安排与通信</text>
+          <text x="52" y="82" font-size="15" fill="#64748b">运行时由采集线程、单个推理线程和 HTTP 请求线程组成。共享状态只通过锁保护的缓冲区和快照传递。</text>
+
+          <defs>
+            <marker id="arrow-thread" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+            </marker>
+            <marker id="arrow-write" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#059669"/>
+            </marker>
+          </defs>
+
+          <g transform="translate(50 124)">
+            <rect width="230" height="292" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+            <text x="20" y="36" font-size="18" font-weight="800" fill="#1e40af">采集线程池</text>
+            <text x="20" y="66" font-size="14" fill="#1e3a8a">CameraCaptureThread x N</text>
+            <rect x="20" y="92" width="190" height="44" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+            <text x="115" y="120" text-anchor="middle" font-size="13" fill="#1e3a8a">C1: /dev/video0 或图片</text>
+            <rect x="20" y="150" width="190" height="44" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+            <text x="115" y="178" text-anchor="middle" font-size="13" fill="#1e3a8a">C2: 视频 / RTSP</text>
+            <rect x="20" y="208" width="190" height="44" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+            <text x="115" y="236" text-anchor="middle" font-size="13" fill="#1e3a8a">C3/C4: 可选输入</text>
+            <text x="20" y="276" font-size="13" fill="#475569">职责：读帧、断线重试、图片循环</text>
+          </g>
+
+          <g transform="translate(360 152)">
+            <rect width="210" height="236" rx="8" fill="#ecfeff" stroke="#a5f3fc"/>
+            <text x="20" y="36" font-size="18" font-weight="800" fill="#155e75">LatestFrameBuffer</text>
+            <text x="20" y="66" font-size="14" fill="#164e63">frames: {camera_id: frame}</text>
+            <text x="20" y="96" font-size="14" fill="#164e63">lock: threading.Lock</text>
+            <text x="20" y="126" font-size="14" fill="#164e63">has_new_frame: Event</text>
+            <line x1="20" y1="152" x2="190" y2="152" stroke="#a5f3fc"/>
+            <text x="20" y="184" font-size="13" fill="#475569">put(): 覆盖旧帧并 set()</text>
+            <text x="20" y="208" font-size="13" fill="#475569">get_all(): 复制后清空槽位</text>
+          </g>
+
+          <g transform="translate(650 124)">
+            <rect width="230" height="292" rx="8" fill="#fff7ed" stroke="#fed7aa"/>
+            <text x="20" y="36" font-size="18" font-weight="800" fill="#9a3412">推理线程</text>
+            <text x="20" y="66" font-size="14" fill="#7c2d12">threading.Thread(_run_inference)</text>
+            <text x="20" y="100" font-size="13" fill="#475569">1. wait(has_new_frame, 0.2s)</text>
+            <text x="20" y="128" font-size="13" fill="#475569">2. get_all() 取当前批次</text>
+            <text x="20" y="156" font-size="13" fill="#475569">3. 串行 detector.detect(frame)</text>
+            <text x="20" y="184" font-size="13" fill="#475569">4. 标注图 encode 为 data URL</text>
+            <text x="20" y="212" font-size="13" fill="#475569">5. 过滤短文本并写库</text>
+            <text x="20" y="240" font-size="13" fill="#475569">6. 更新 events / latency / errors</text>
+          </g>
+
+          <g transform="translate(958 92)">
+            <rect width="172" height="150" rx="8" fill="#ecfdf5" stroke="#bbf7d0"/>
+            <text x="18" y="34" font-size="17" font-weight="800" fill="#047857">运行时快照</text>
+            <text x="18" y="62" font-size="13" fill="#065f46">camera_frames</text>
+            <text x="18" y="86" font-size="13" fill="#065f46">events[-100:]</text>
+            <text x="18" y="110" font-size="13" fill="#065f46">latency_by_camera</text>
+            <text x="18" y="134" font-size="13" fill="#065f46">errors[-20:]</text>
+          </g>
+
+          <g transform="translate(958 292)">
+            <rect width="172" height="168" rx="8" fill="#f5f3ff" stroke="#ddd6fe"/>
+            <text x="18" y="34" font-size="17" font-weight="800" fill="#5b21b6">HTTP 请求线程</text>
+            <text x="18" y="64" font-size="13" fill="#4c1d95">ThreadingHTTPServer</text>
+            <text x="18" y="94" font-size="13" fill="#4c1d95">GET /api/events</text>
+            <text x="18" y="120" font-size="13" fill="#4c1d95">GET /api/search</text>
+            <text x="18" y="146" font-size="13" fill="#4c1d95">静态文件 /web /assets</text>
+          </g>
+
+          <g transform="translate(360 454)">
+            <rect width="520" height="90" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+            <text x="20" y="34" font-size="17" font-weight="800" fill="#334155">SQLite 写入与查询</text>
+            <text x="20" y="62" font-size="13" fill="#475569">推理线程写入 `vehicle_history`；HTTP 搜索请求打开新连接按车牌查询最后位置。</text>
+          </g>
+
+          <g stroke="#64748b" stroke-width="2.2" fill="none" marker-end="url(#arrow-thread)">
+            <path d="M280 270 H360"/>
+            <path d="M570 270 H650"/>
+            <path d="M880 196 H958"/>
+            <path d="M1044 292 V242"/>
+          </g>
+          <g stroke="#059669" stroke-width="2.2" fill="none" marker-end="url(#arrow-write)">
+            <path d="M765 416 C765 448 690 448 690 454"/>
+            <path d="M958 376 C900 426 820 444 760 454"/>
+          </g>
+
+          <text x="50" y="570" font-size="14" fill="#64748b">通信要点：采集线程不直接调用模型；HTTP 请求不直接读取未加锁的运行时状态；数据库连接按操作短期开启。</text>
+        </svg>
+      </div>
+
+      <div class="grid cols-3" style="margin-top:16px">
+        <article class="card">
+          <h3>为什么单推理线程</h3>
+          <p>PC 和 BPU 后端都可能占用大量计算资源。串行推理可以避免多线程同时访问模型 runtime，特别是 BPU runtime 的调度冲突。</p>
+        </article>
+        <article class="card">
+          <h3>为什么最新帧覆盖</h3>
+          <p>地库监控更重实时性。旧帧被覆盖后不会积压，系统宁可丢过期画面，也不让延迟无限增长。</p>
+        </article>
+        <article class="card">
+          <h3>错误如何传递</h3>
+          <p>`_run_inference` 捕获单帧推理异常，把最近 20 条错误写入 `errors`，`/api/events` 返回给前端用于排障。</p>
+        </article>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead>
+          <tr>
+            <th>线程 / 请求</th>
+            <th>创建位置</th>
+            <th>读写对象</th>
+            <th>同步机制</th>
+            <th>退出条件</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>采集线程</td>
+            <td>`WebInferenceRuntime.start()`</td>
+            <td>写 `LatestFrameBuffer.frames`</td>
+            <td>`frame_buffer.lock` + `has_new_frame.set()`</td>
+            <td>`stop_event.is_set()`</td>
+          </tr>
+          <tr>
+            <td>推理线程</td>
+            <td>`threading.Thread(target=_run_inference)`</td>
+            <td>读缓冲；写 `camera_frames/events/latency/errors`；写 SQLite</td>
+            <td>`frame_buffer.has_new_frame.wait()` + `runtime.lock`</td>
+            <td>`stop_event.is_set()`</td>
+          </tr>
+          <tr>
+            <td>`/api/events` 请求</td>
+            <td>`ThreadingHTTPServer`</td>
+            <td>读 `WEB_RUNTIME.snapshot()` 或数据库最近记录</td>
+            <td>`runtime.lock` 复制快照</td>
+            <td>请求完成即释放</td>
+          </tr>
+          <tr>
+            <td>`/api/search` 请求</td>
+            <td>`ThreadingHTTPServer`</td>
+            <td>读 `vehicle_locator.db`，必要时模糊查询</td>
+            <td>SQLite 短连接；不共享 cursor</td>
+            <td>请求完成即释放</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="quickstart">
+      <div class="section-head">
+        <div>
+          <h2>4. PC 开发部署路线</h2>
+          <p>PC 端用于快速复现、调试 Web 控制台和验证 `.pt` 模型。完整依赖细节见 <a href="INSTALL_AND_DEPLOY.md#5-pc-环境构建">安装与部署教程</a>。</p>
+        </div>
+        <div class="callout warning">
+          <p><strong>建议：</strong>先用 `--backend none` 验证页面，再安装 PaddleOCR 和 Ultralytics 跑 PC 推理。</p>
+        </div>
+      </div>
+
+      <div class="stepper">
+        <div class="step">
+          <div>
+            <h3>安装 Conda 并创建环境</h3>
+            <p>使用 Python 3.10，避免 PaddleOCR、PyQtWebEngine 和 OpenCV 之间的版本问题。</p>
+            <pre><code>conda create -n garage_ocr python=3.10 -y
+conda activate garage_ocr
+python -m pip install --upgrade pip setuptools wheel</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>安装基础依赖和 PC 推理依赖</h3>
+            <p>`requirements.txt` 是桌面/WebView 基础依赖，PC 推理还需要 `ultralytics`、`paddlepaddle` 和 `paddleocr`。</p>
+            <pre><code>python -m pip install -r requirements.txt
+python -m pip install ultralytics paddlepaddle paddleocr</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>启动浏览器 Web 控制台</h3>
+            <p>使用测试图输入，页面会展示监控画面、通行日志、末次位置查询和路径示意。</p>
+            <pre><code>python web_app.py --backend pc --host 127.0.0.1 --port 8080 --inputs assets/test_plate.jpg assets/test_plate2.jpg --yolo-model models/yolo11m-pose-carplate.pt</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>可选：桌面 WebView</h3>
+            <p>桌面窗口只是把本地 Web 控制台包进 PyQt WebView，适合演示机。</p>
+            <pre><code>python webview_app.py --backend pc --inputs assets/test_plate.jpg assets/test_plate2.jpg</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="rdk">
+      <div class="section-head">
+        <div>
+          <h2>5. RDK X5 部署路线</h2>
+          <p>板端部署的核心是确认 `hbm_runtime`、复制 `.bin` 模型、安装最小依赖，然后用 `web_app.py --backend bpu` 监听局域网。</p>
+        </div>
+        <div class="visual-card">
+          <img src="tutorial-assets/garage-ai-system.png" alt="地库摄像头、边缘计算板和 Web 控制台整体系统示意">
+          <div class="caption">部署目标：摄像头接入 RDK X5，PC 浏览器访问板端 Web 控制台。</div>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="panel">
+          <h3>板端最小准备</h3>
+          <pre><code>ssh sunrise@&lt;RDK-IP&gt;
+cd ~/garage_locator
+python3 -c "import hbm_runtime; print('hbm_runtime OK')"
+python3 -m pip install --user -r requirements-rdk.txt</code></pre>
+        </div>
+        <div class="panel">
+          <h3>启动 BPU Web 服务</h3>
+          <pre><code>python3 web_app.py \
+  --backend bpu \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --inputs /dev/video0 \
+  --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
+  --lpr-bin models/lpr.bin</code></pre>
+        </div>
+      </div>
+
+      <div class="diagram" style="margin-top:16px" role="img" aria-label="RDK 部署检查清单图">
+        <svg viewBox="0 0 1180 340" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1180" height="340" fill="#ffffff"/>
+          <text x="52" y="54" font-size="26" font-weight="800" fill="#0f172a">RDK 部署检查线</text>
+          <g transform="translate(60 108)">
+            <line x1="65" y1="58" x2="1000" y2="58" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round"/>
+            <g>
+              <circle cx="65" cy="58" r="24" fill="#2563eb"/><text x="65" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">1</text>
+              <text x="65" y="112" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">系统 Python</text>
+              <text x="65" y="136" text-anchor="middle" font-size="13" fill="#64748b">不用复制 PC conda</text>
+            </g>
+            <g transform="translate(235 0)">
+              <circle cx="65" cy="58" r="24" fill="#0891b2"/><text x="65" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">2</text>
+              <text x="65" y="112" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">hbm_runtime</text>
+              <text x="65" y="136" text-anchor="middle" font-size="13" fill="#64748b">BPU Python SDK</text>
+            </g>
+            <g transform="translate(470 0)">
+              <circle cx="65" cy="58" r="24" fill="#059669"/><text x="65" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">3</text>
+              <text x="65" y="112" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">.bin 模型</text>
+              <text x="65" y="136" text-anchor="middle" font-size="13" fill="#64748b">YOLO + LPRNet</text>
+            </g>
+            <g transform="translate(705 0)">
+              <circle cx="65" cy="58" r="24" fill="#b45309"/><text x="65" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">4</text>
+              <text x="65" y="112" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">摄像头</text>
+              <text x="65" y="136" text-anchor="middle" font-size="13" fill="#64748b">/dev/video 或 RTSP</text>
+            </g>
+            <g transform="translate(940 0)">
+              <circle cx="65" cy="58" r="24" fill="#7c3aed"/><text x="65" y="64" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">5</text>
+              <text x="65" y="112" text-anchor="middle" font-size="15" font-weight="800" fill="#0f172a">浏览器访问</text>
+              <text x="65" y="136" text-anchor="middle" font-size="13" fill="#64748b">http://RDK-IP:8080</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section id="technology">
+      <div class="section-head">
+        <div>
+          <h2>6. 技术栈说明和官方链接</h2>
+          <p>这里列出本仓库直接使用或部署时需要理解的技术。链接优先指向官方文档或稳定项目入口。</p>
+        </div>
+        <div class="note">
+          外部文档会随版本更新；实际安装命令以官方页面和当前硬件环境为准。
+        </div>
+      </div>
+
+      <div class="tech-list">
+        <article class="tech-item">
+          <h3>Python</h3>
+          <p>项目主语言，负责 HTTP 服务、图像处理、推理调度和数据库写入。</p>
+          <a href="https://docs.python.org/3/" target="_blank" rel="noreferrer">Python 官方文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>Python http.server</h3>
+          <p>`web_app.py` 使用标准库 HTTP 服务提供静态页面和 JSON API，不依赖额外 Web 框架。</p>
+          <a href="https://docs.python.org/3/library/http.server.html" target="_blank" rel="noreferrer">http.server 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>Conda / Miniconda</h3>
+          <p>PC 端环境隔离工具，避免 OpenCV、PaddleOCR、PyQt 依赖互相污染。</p>
+          <a href="https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html" target="_blank" rel="noreferrer">Conda 安装文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>OpenCV</h3>
+          <p>读取摄像头、视频和图片，编码 Web 画面，执行车牌裁切和透视变换。</p>
+          <a href="https://docs.opencv.org/4.x/d8/dfe/classcv_1_1VideoCapture.html" target="_blank" rel="noreferrer">VideoCapture 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>Ultralytics YOLO</h3>
+          <p>PC 端加载 YOLO pose `.pt`，输出车牌框和四个角点。</p>
+          <a href="https://docs.ultralytics.com/" target="_blank" rel="noreferrer">Ultralytics 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>PaddleOCR / PaddlePaddle</h3>
+          <p>PC 后端使用 PaddleOCR 识别裁切后的中文车牌文本。</p>
+          <a href="https://github.com/PaddlePaddle/PaddleOCR/blob/main/docs/version3.x/installation.en.md" target="_blank" rel="noreferrer">PaddleOCR 安装文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>RDK X5 / hbm_runtime</h3>
+          <p>板端 BPU runtime，负责加载 `.bin` 模型并运行加速推理。</p>
+          <a href="https://github.com/D-Robotics/rdk_model_zoo" target="_blank" rel="noreferrer">D-Robotics RDK Model Zoo</a>
+          <a href="https://developer.d-robotics.cc/rdk_doc/en/Quick_start/download/" target="_blank" rel="noreferrer">RDK 官方下载文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>SQLite</h3>
+          <p>本地轨迹库，保存车牌号、摄像头编号、时间和车牌裁切图。</p>
+          <a href="https://docs.python.org/3/library/sqlite3.html" target="_blank" rel="noreferrer">Python sqlite3 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>NumPy</h3>
+          <p>承载图像数组、关键点坐标和后处理计算，是 OpenCV 与模型输出之间的基础数据结构。</p>
+          <a href="https://numpy.org/doc/stable/" target="_blank" rel="noreferrer">NumPy 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>Pillow</h3>
+          <p>用于绘制中文标注和字体回退，弥补 OpenCV 原生文字绘制对中文支持不足的问题。</p>
+          <a href="https://pillow.readthedocs.io/en/stable/" target="_blank" rel="noreferrer">Pillow 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>pyclipper</h3>
+          <p>几何处理依赖之一，可用于多边形裁切、偏移和后处理场景。</p>
+          <a href="https://pypi.org/project/pyclipper/" target="_blank" rel="noreferrer">pyclipper PyPI</a>
+        </article>
+        <article class="tech-item">
+          <h3>PyQt5 / PyQtWebEngine</h3>
+          <p>桌面 WebView 壳，用于把 Web 控制台包成 PC 桌面窗口。</p>
+          <a href="https://www.riverbankcomputing.com/static/Docs/PyQt5/" target="_blank" rel="noreferrer">PyQt5 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>HTML / CSS / JavaScript</h3>
+          <p>Web 控制台和本静态教程页使用的前端基础技术。</p>
+          <a href="https://developer.mozilla.org/en-US/docs/Web" target="_blank" rel="noreferrer">MDN Web 文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>systemd</h3>
+          <p>RDK 长期部署时可用 systemd 把 Web 服务配置为开机启动。</p>
+          <a href="https://systemd.io/" target="_blank" rel="noreferrer">systemd 项目文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>Git</h3>
+          <p>代码版本管理，提交文档、模型白名单和部署脚本变更。</p>
+          <a href="https://git-scm.com/docs" target="_blank" rel="noreferrer">Git 官方文档</a>
+        </article>
+        <article class="tech-item">
+          <h3>pip / Python Packaging</h3>
+          <p>安装 `requirements.txt` 和 `requirements-rdk.txt` 中的运行依赖。</p>
+          <a href="https://packaging.python.org/en/latest/tutorials/installing-packages/" target="_blank" rel="noreferrer">Python 包安装指南</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="testing">
+      <div class="section-head">
+        <div>
+          <h2>7. 测试和验收</h2>
+          <p>提交前至少跑轻量验证。PC 和 RDK 的完整联调命令见 <a href="TESTING.md">TESTING.md</a>。</p>
+        </div>
+        <div class="callout">
+          <p><strong>最低门槛：</strong>语法编译、入口 `--help`、核心导入、数据库烟测。</p>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="panel">
+          <h3>PC 轻量测试</h3>
+          <pre><code>python -m py_compile web_app.py webview_app.py utils/__init__.py utils/camera_worker.py utils/db_manager.py utils/detect_plate_rdk.py utils/gui_theme.py utils/inference.py utils/plate_utils.py utils/preprocess.py utils/postprocess.py utils/ultralytics_yolo_pose.py test/test_headless.py
+python web_app.py --help
+python webview_app.py --help
+python test/test_headless.py --help
+python utils/detect_plate_rdk.py --help</code></pre>
+        </div>
+        <div class="panel">
+          <h3>数据库烟测</h3>
+          <pre><code>python -c "import tempfile, os, gc; from utils.db_manager import DBManager; fd,p=tempfile.mkstemp(suffix='.db'); os.close(fd); db=DBManager(p); db.record_occurrence('皖AS0747',1); db.record_occurrence('皖AS0747',2); db.record_occurrence('皖AQ4025',3); assert db.query_last_location('皖AS0747')['camera_id']==2; fuzzy=db.query_fuzzy('皖A'); assert {row['plate_number'] for row in fuzzy}=={'皖AS0747','皖AQ4025'}; db=None; gc.collect(); os.remove(p); print('db smoke OK')"</code></pre>
+        </div>
+      </div>
+
+      <table style="margin-top:16px">
+        <thead>
+          <tr>
+            <th>验收项</th>
+            <th>通过标准</th>
+            <th>相关文件</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Web 页面</td>
+            <td>`--backend none` 能打开首页和 `/api/events`</td>
+            <td>`web_app.py`、`web/`</td>
+          </tr>
+          <tr>
+            <td>PC 推理</td>
+            <td>测试图片可产生监控帧和事件日志</td>
+            <td>`utils/inference.py`、`.pt` 模型</td>
+          </tr>
+          <tr>
+            <td>RDK 推理</td>
+            <td>`hbm_runtime` 可导入，BPU 后端能加载 `.bin`</td>
+            <td>`utils/ultralytics_yolo_pose.py`、`.bin` 模型</td>
+          </tr>
+          <tr>
+            <td>数据库</td>
+            <td>同一车牌按最新 `id` 返回末次位置</td>
+            <td>`utils/db_manager.py`</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="troubleshooting">
+      <div class="section-head">
+        <div>
+          <h2>8. 常见问题排障地图</h2>
+          <p>下面是最常见的失败点。详细排障说明见 <a href="INSTALL_AND_DEPLOY.md#11-常见问题">安装与部署教程的常见问题</a>。</p>
+        </div>
+        <div class="callout danger">
+          <p><strong>最容易踩坑：</strong>在 PC conda 环境里运行 `--backend bpu`，这会找不到 RDK 板端的 `hbm_runtime`。</p>
+        </div>
+      </div>
+
+      <div class="grid cols-3">
+        <article class="card">
+          <h3>缺 `cv2`</h3>
+          <p>PC 安装 `opencv-python`；RDK 优先 `requirements-rdk.txt` 或系统 `python3-opencv`。</p>
+        </article>
+        <article class="card">
+          <h3>缺 `paddleocr`</h3>
+          <p>只影响 PC 后端。先安装 CPU 版 PaddlePaddle，再装 PaddleOCR。</p>
+        </article>
+        <article class="card">
+          <h3>缺 `hbm_runtime`</h3>
+          <p>只应在 RDK 上使用 BPU 后端，确认板端系统 Python 和厂商 SDK。</p>
+        </article>
+        <article class="card">
+          <h3>端口被占用</h3>
+          <p>改用 `--port 8090`，或用 `netstat` / `ss` 找到占用进程。</p>
+        </article>
+        <article class="card">
+          <h3>无实时画面</h3>
+          <p>检查 `/api/events`、输入源路径、摄像头权限和终端推理异常。</p>
+        </article>
+        <article class="card">
+          <h3>识别文本为空</h3>
+          <p>检查裁切图质量、角点顺序、OCR 模型下载和 LPRNet 字符表匹配。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="references">
+      <div class="section-head">
+        <div>
+          <h2>9. 仓库内文档入口</h2>
+          <p>本页是可视化总览，真实命令和维护细则仍以 Markdown 文档为准。</p>
+        </div>
+      </div>
+
+      <div class="grid cols-3">
+        <article class="card">
+          <h3>完整安装部署</h3>
+          <p>从 Conda 到 PC/RDK 部署的详细命令。</p>
+          <p><a href="INSTALL_AND_DEPLOY.md">打开 INSTALL_AND_DEPLOY.md</a></p>
+        </article>
+        <article class="card">
+          <h3>仓库地图</h3>
+          <p>模块边界、数据流和维护约定。</p>
+          <p><a href="REPO_MAP.md">打开 REPO_MAP.md</a></p>
+        </article>
+        <article class="card">
+          <h3>测试说明</h3>
+          <p>轻量测试、PC 联调和 RDK 联调。</p>
+          <p><a href="TESTING.md">打开 TESTING.md</a></p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>
+        本静态教程不依赖构建工具，可直接用浏览器打开。生成插图保存于 <code>docs/tutorial-assets/</code>；流程图和关系图由 HTML/SVG 绘制，便于维护和打印。
+      </p>
+    </footer>
+  </main>
+</body>
+</html>

@@ -43,7 +43,9 @@ garage_locator/
 ├── docs/
 │   ├── INSTALL_AND_DEPLOY.md   # Conda、PC 与 RDK X5 完整部署教程
 │   ├── REPO_MAP.md             # 模块地图和数据流
-│   └── TESTING.md              # 轻量测试说明
+│   ├── TESTING.md              # 轻量测试说明
+│   ├── visual-tutorial.html    # 可视化静态教程
+│   └── tutorial-assets/        # 可视化教程配图
 ├── models/                     # PC 与板端模型权重
 │   ├── yolo11m-pose-carplate.pt
 │   ├── yolo11m-pose-carplate_bayese_640x640_nv12.bin
@@ -72,6 +74,7 @@ garage_locator/
 
 ## 完整文档
 
+- 可视化静态教程：[`docs/visual-tutorial.html`](docs/visual-tutorial.html)
 - 从 Conda 安装、PC 环境构建到 RDK X5 部署：[`docs/INSTALL_AND_DEPLOY.md`](docs/INSTALL_AND_DEPLOY.md)
 - 仓库结构、模块边界和数据流：[`docs/REPO_MAP.md`](docs/REPO_MAP.md)
 - 提交前验证和测试命令：[`docs/TESTING.md`](docs/TESTING.md)

@@ -47,6 +47,7 @@
 | 路径 | 内容 |
 | --- | --- |
 | `README.md` | 项目概览、快速运行和文档入口。 |
+| `docs/visual-tutorial.html` | 可直接打开的静态可视化教程，包含架构图、部署路线和技术链接。 |
 | `docs/INSTALL_AND_DEPLOY.md` | 从 Conda 安装到 PC / RDK X5 部署的完整教程。 |
 | `docs/REPO_MAP.md` | 模块边界、数据流和维护约定。 |
 | `docs/TESTING.md` | 轻量测试、PC 联调和 RDK 联调命令。 |
@@ -79,6 +80,24 @@ DetectionResult[]
       vehicle_locator.db
 ```
 
+## 线程安排与通信
+
+Web 控制台运行时由三类并发执行单元组成：
+
+| 执行单元 | 创建位置 | 主要职责 | 通信对象 |
+| --- | --- | --- | --- |
+| `CameraCaptureThread` x N | `WebInferenceRuntime.start()` | 每路输入一个采集线程，读取摄像头、视频、RTSP 或图片源。图片源每秒重复投递，视频文件读到末尾后循环。 | 调用 `LatestFrameBuffer.put(camera_id, frame)` |
+| 推理线程 | `threading.Thread(target=self._run_inference)` | 等待任意通道有新帧，批量取出当前最新帧，串行调用 `detector.detect(frame)`，更新标注图、延迟、事件和错误列表。 | 读取 `LatestFrameBuffer`；写 `camera_frames`、`events`、`latency_by_camera`、`errors` 和 SQLite |
+| HTTP 请求线程 | `ThreadingHTTPServer` | 每个请求独立处理静态文件、`/api/events` 和 `/api/search`。 | 通过 `WEB_RUNTIME.snapshot()` 读取运行时快照，或直接查询 SQLite |
+
+同步策略：
+
+- `LatestFrameBuffer` 使用 `threading.Lock` 保护 `frames` 字典，用 `threading.Event` 通知推理线程有新帧。
+- `put()` 覆盖同一路旧帧，避免队列堆积；`get_all()` 复制当前批次后清空槽位，保证实时性优先。
+- `WebInferenceRuntime.lock` 保护 `camera_frames`、`events`、`latency_by_camera` 和 `errors`，HTTP 请求只读取复制后的快照。
+- 推理后端实例只被单个推理线程调用，避免 PC 模型 runtime 或 RDK BPU runtime 被多线程同时访问。
+- SQLite 连接按写入或查询短期开启，不跨线程共享 cursor。
+
 ## 后端差异
 
 | 后端 | 适用环境 | 检测 | OCR |
@@ -87,6 +106,16 @@ DetectionResult[]
 | `bpu` | RDK X5 板端 | `hbm_runtime` YOLO pose `.bin` | LPRNet `.bin` |
 
 两种后端都返回 `utils.inference.DetectionResult`，因此 UI、数据库和日志逻辑无需关心具体推理实现。
+
+`DetectionResult` 字段约定：
+
+| 字段 | 含义 | 消费方 |
+| --- | --- | --- |
+| `box` | 车牌矩形框 4 点，用于画检测框。 | `draw_annotations()` |
+| `pts` | 车牌四角关键点，用于透视裁切。 | `crop_plate()` |
+| `text` | 清洗后的车牌号。 | 事件日志、SQLite、查询结果 |
+| `confidence` | OCR 或 LPRNet 识别置信度。 | 前端日志、标注文字 |
+| `crop` | 车牌裁切图。 | `DBManager.record_occurrence()` |
 
 ## 数据库
 
