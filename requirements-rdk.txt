@@ -1,0 +1,6 @@
+# Minimal runtime dependencies for RDK X5 browser-based deployment.
+# hbm_runtime is provided by the RDK OS / vendor Python SDK and is not installed by pip.
+numpy>=1.20.0
+opencv-python-headless>=4.5.0
+Pillow>=8.0.0
+pyclipper>=1.2.0

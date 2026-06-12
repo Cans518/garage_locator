@@ -1,6 +1,6 @@
 # Utils
 
-`utils/` 是项目的方法文件目录。这里保持单层结构，所有主应用依赖的业务模块、板端适配模块和公共工具都放在这一层，方便在 `main.py`、`test/test_headless.py` 和独立 CLI 中复用。
+`utils/` 是项目的方法文件目录。这里保持单层结构，所有主应用依赖的业务模块、板端适配模块和公共工具都放在这一层，方便在 `web_app.py`、`webview_app.py`、`test/test_headless.py` 和独立 CLI 中复用。
 
 ## 文件职责
 

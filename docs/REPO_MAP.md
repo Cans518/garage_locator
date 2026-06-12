@@ -37,10 +37,20 @@
 | --- | --- |
 | `models/` | PC 与板端模型权重。`.gitignore` 默认忽略模型大文件，只显式允许项目自带模型。 |
 | `assets/` | 测试图片和 README 展示图片。 |
-| `docs/` | 仓库地图和测试说明。 |
+| `docs/` | 安装部署教程、仓库地图和测试说明。 |
 | `test/` | 测试、自检入口。 |
 | `utils/` | 单层方法文件目录。 |
 | `web/` | Web 控制台前端资源。 |
+
+## 文档目录
+
+| 路径 | 内容 |
+| --- | --- |
+| `README.md` | 项目概览、快速运行和文档入口。 |
+| `docs/INSTALL_AND_DEPLOY.md` | 从 Conda 安装到 PC / RDK X5 部署的完整教程。 |
+| `docs/REPO_MAP.md` | 模块边界、数据流和维护约定。 |
+| `docs/TESTING.md` | 轻量测试、PC 联调和 RDK 联调命令。 |
+| `utils/README.md` | `utils/` 目录内各模块职责。 |
 
 ## 主程序数据流
 
@@ -99,4 +109,4 @@ DetectionResult[]
 - 测试或自检入口放在 `test/` 下。
 - 不再恢复原始 RDK 示例中的批量评估、性能测试、模型映射和通用可视化工具，除非它们重新成为本应用运行路径的一部分。
 - 生成物如 `__pycache__/`、`*.db`、`*.zip`、`output_results/`、`plate_crops/`、`output_*.jpg` 不应提交。
-- 目录、导入或 CLI 参数变更后，至少运行 [`docs/TESTING.md`](TESTING.md) 中的轻量测试。
+- 目录、导入、依赖或 CLI 参数变更后，同步更新 [`docs/INSTALL_AND_DEPLOY.md`](INSTALL_AND_DEPLOY.md) 和 [`docs/TESTING.md`](TESTING.md)。

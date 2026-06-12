@@ -41,6 +41,7 @@
 garage_locator/
 ├── assets/                     # 测试图片和 README 展示图片
 ├── docs/
+│   ├── INSTALL_AND_DEPLOY.md   # Conda、PC 与 RDK X5 完整部署教程
 │   ├── REPO_MAP.md             # 模块地图和数据流
 │   └── TESTING.md              # 轻量测试说明
 ├── models/                     # PC 与板端模型权重
@@ -63,12 +64,20 @@ garage_locator/
 ├── webview_app.py              # PyQt WebView 桌面壳入口
 ├── web/                        # Web 控制台前端页面
 ├── requirements.txt
+├── requirements-rdk.txt
 └── .gitignore
 ```
 
 `utils/` 保持单层目录，避免方法文件分散。各文件职责见 [`utils/README.md`](utils/README.md)。
 
-## 环境准备
+## 完整文档
+
+- 从 Conda 安装、PC 环境构建到 RDK X5 部署：[`docs/INSTALL_AND_DEPLOY.md`](docs/INSTALL_AND_DEPLOY.md)
+- 仓库结构、模块边界和数据流：[`docs/REPO_MAP.md`](docs/REPO_MAP.md)
+- 提交前验证和测试命令：[`docs/TESTING.md`](docs/TESTING.md)
+- `utils/` 内部模块说明：[`utils/README.md`](utils/README.md)
+
+## 环境准备（快速版）
 
 基础依赖：
 
@@ -76,9 +85,19 @@ garage_locator/
 pip3 install -r requirements.txt
 ```
 
-PC 端推理还需要安装 `ultralytics`、`paddlepaddle`、`paddleocr`。这些依赖在 `requirements.txt` 中作为可选项注释，按本机环境安装即可。
+PC 端推理还需要安装 `ultralytics`、`paddlepaddle`、`paddleocr`：
 
-RDK X5 板端推理需要系统中可导入 `hbm_runtime`，并确保 `models/` 下的 BPU `.bin` 模型存在。
+```bash
+pip3 install ultralytics paddlepaddle paddleocr
+```
+
+RDK X5 板端推理需要系统中可导入 `hbm_runtime`。板端只运行浏览器 Web 控制台时建议安装最小依赖：
+
+```bash
+pip3 install --user -r requirements-rdk.txt
+```
+
+更详细的 Conda 安装、PC 和 RDK 环境构建步骤见 [`docs/INSTALL_AND_DEPLOY.md`](docs/INSTALL_AND_DEPLOY.md)。
 
 Windows PowerShell 可把下面命令里的 `python3` 换成 `python`。
 

@@ -55,6 +55,7 @@ python3 utils/detect_plate_rdk.py --help
 ## PC 后端联调
 
 需要额外安装 `ultralytics`、`paddlepaddle`、`paddleocr`。
+完整环境构建步骤见 [`INSTALL_AND_DEPLOY.md`](INSTALL_AND_DEPLOY.md)。
 
 ```bash
 python3 web_app.py \
@@ -68,6 +69,11 @@ python3 web_app.py \
 ## RDK X5 板端联调
 
 需要在板端环境中可导入 `hbm_runtime`。
+板端 Web 服务只需要最小依赖，可执行：
+
+```bash
+python3 -m pip install --user -r requirements-rdk.txt
+```
 
 无界面自检：
 
@@ -79,7 +85,7 @@ python3 test/test_headless.py \
   --lpr-bin models/lpr.bin
 ```
 
-全屏监控台：
+Web 控制台：
 
 ```bash
 python3 web_app.py \
