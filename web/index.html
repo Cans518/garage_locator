@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>地库车辆定位系统</title>
+  <link rel="stylesheet" href="/web/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>地库车辆定位系统</h1>
+        <p>车牌查询、末次位置、路径引导与监控证据</p>
+      </div>
+      <div class="topbar-meta">
+        <span class="pill pill-blue">Web Console</span>
+        <span class="pill pill-green">系统在线</span>
+        <time id="clock">--:--</time>
+      </div>
+    </header>
+
+    <section class="dashboard">
+      <section class="workspace">
+        <form class="search-panel" id="searchForm">
+          <div>
+            <label for="plateInput">车辆快速查询</label>
+            <p>输入车牌号后，系统会查询本地轨迹库并生成入口到末次摄像头的路径。</p>
+          </div>
+          <div class="search-row">
+            <input id="plateInput" name="plate" type="text" placeholder="例如 粤B12345 / 皖AS0747" autocomplete="off">
+            <button type="submit">查询</button>
+          </div>
+        </form>
+
+        <section class="result-panel">
+          <div class="section-heading">
+            <h2>定位结果</h2>
+            <span id="resultState">等待查询</span>
+          </div>
+
+          <div class="result-summary">
+            <div>
+              <span class="eyebrow">车牌号</span>
+              <strong id="plateValue">请输入车牌号</strong>
+            </div>
+            <div>
+              <span class="eyebrow">末次位置</span>
+              <strong id="cameraValue">暂无结果</strong>
+            </div>
+            <div>
+              <span class="eyebrow">通行时间</span>
+              <strong id="timeValue">--</strong>
+            </div>
+            <figure class="plate-crop" id="plateCrop">
+              <span>车牌截图</span>
+            </figure>
+          </div>
+
+          <section class="map-card">
+            <div class="map-title">
+              <h2>地库路径示意</h2>
+              <span id="routeLabel">等待查询结果</span>
+            </div>
+            <svg class="garage-map" viewBox="0 0 1000 520" role="img" aria-label="地库路径示意图">
+              <defs>
+                <pattern id="grid" width="100" height="80" patternUnits="userSpaceOnUse">
+                  <path d="M 100 0 L 0 0 0 80" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                </pattern>
+              </defs>
+              <rect x="0" y="0" width="1000" height="520" fill="url(#grid)"/>
+              <g class="slots">
+                <rect x="300" y="100" width="54" height="72"/>
+                <rect x="390" y="100" width="54" height="72"/>
+                <rect x="480" y="100" width="54" height="72"/>
+                <rect x="570" y="100" width="54" height="72"/>
+                <rect x="660" y="100" width="54" height="72"/>
+                <rect x="750" y="100" width="54" height="72"/>
+                <rect x="300" y="260" width="54" height="72"/>
+                <rect x="390" y="260" width="54" height="72"/>
+                <rect x="480" y="260" width="54" height="72"/>
+                <rect x="570" y="260" width="54" height="72"/>
+                <rect x="660" y="260" width="54" height="72"/>
+                <rect x="750" y="260" width="54" height="72"/>
+              </g>
+              <g class="corridors">
+                <path d="M80 430 H870"/>
+                <path d="M180 105 V430"/>
+                <path d="M180 150 H870"/>
+                <path d="M180 300 H870"/>
+                <path d="M760 150 V430"/>
+              </g>
+              <path id="routePath" class="route hidden" d=""/>
+              <g class="entry">
+                <circle cx="80" cy="430" r="8"/>
+                <text x="66" y="464">入口</text>
+              </g>
+              <g class="camera-point" data-camera="1" transform="translate(870 105)">
+                <circle r="16"/><text y="5">C1</text>
+              </g>
+              <g class="camera-point" data-camera="2" transform="translate(180 150)">
+                <circle r="16"/><text y="5">C2</text>
+              </g>
+              <g class="camera-point" data-camera="3" transform="translate(760 300)">
+                <circle r="16"/><text y="5">C3</text>
+              </g>
+              <g class="camera-point" data-camera="4" transform="translate(420 430)">
+                <circle r="16"/><text y="5">C4</text>
+              </g>
+            </svg>
+          </section>
+        </section>
+      </section>
+
+      <aside class="side-rail">
+        <section class="stats-grid">
+          <article><strong id="channelCount">4</strong><span>通道</span></article>
+          <article><strong id="recordCount">0</strong><span>记录</span></article>
+          <article><strong>在线</strong><span>状态</span></article>
+        </section>
+
+        <section class="monitor-panel">
+          <div class="section-heading compact">
+            <h2>监控展示</h2>
+          </div>
+          <div class="camera-grid" id="cameraGrid"></div>
+        </section>
+
+        <section class="log-panel">
+          <div class="section-heading compact">
+            <h2>实时通行日志</h2>
+          </div>
+          <ol id="eventList" class="event-list"></ol>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script src="/web/app.js"></script>
+</body>
+</html>

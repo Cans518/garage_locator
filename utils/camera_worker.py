@@ -49,6 +49,8 @@ class FrameBuffer:
 
 class CameraGrabber(QThread):
     """轻量摄像头采集线程，不占用 BPU，带断线自动恢复"""
+    IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+
     def __init__(self, camera_id: int, source, frame_buffer: FrameBuffer):
         super().__init__()
         self.camera_id = camera_id
@@ -63,6 +65,21 @@ class CameraGrabber(QThread):
         source_val = self.source
         if isinstance(self.source, str) and self.source.isdigit():
             source_val = int(self.source)
+
+        if isinstance(self.source, str):
+            source_path = Path(self.source)
+            if source_path.suffix.lower() in self.IMAGE_EXTENSIONS and source_path.exists():
+                frame = cv2.imread(str(source_path))
+                if frame is None:
+                    print(f"Camera {self.camera_id} could not read image source: {self.source}")
+                    return
+
+                while self.running:
+                    self.frame_buffer.put(self.camera_id, frame.copy())
+                    self.msleep(1000)
+
+                print(f"CameraGrabber {self.camera_id} stopped.")
+                return
 
         cap = cv2.VideoCapture(source_val)
         while self.running:

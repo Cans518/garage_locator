@@ -4,9 +4,11 @@ __pycache__/
 .venv/
 venv/
 ENV/
+.vscode/
 *.db
 *.db-journal
 *.log
+*.zip
 
 # 模型权重大文件过滤
 *.pt

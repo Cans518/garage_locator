@@ -1,6 +1,6 @@
 # 地库车辆定位系统 (Garage Vehicle Locator System)
 
-基于 **PyQt5** 和地瓜派 **RDK X5 BPU 硬件加速** 的多路摄像头车牌定位与轨迹检索系统。系统会实时读取地库摄像头画面，检测车牌四角，裁切矫正后识别车牌，并把车辆最近一次出现的位置写入本地 SQLite 数据库，方便通过车牌号快速查询“最后出现位置”。
+基于 **Web 控制台 + PyQt WebView 桌面壳** 和地瓜派 **RDK X5 BPU 硬件加速** 的多路摄像头车牌定位与轨迹检索系统。系统会实时读取地库摄像头画面，检测车牌四角，裁切矫正后识别车牌，并把车辆最近一次出现的位置写入本地 SQLite 数据库，方便通过车牌号快速查询“最后出现位置”。
 
 ## 功能概览
 
@@ -10,7 +10,8 @@
 - 支持 PC 测试后端：YOLO pose + PaddleOCR。
 - 支持 RDK X5 板端后端：YOLO pose `.bin` + LPRNet `.bin`。
 - 使用 SQLite 保存车牌、摄像头编号、时间和车牌裁切图。
-- PyQt5 全屏监控台支持实时日志和车牌末次位置查询。
+- Web 控制台支持实时日志、车牌末次位置查询和路径示意。
+- PyQt WebView 桌面壳可把 Web 控制台打包为桌面窗口运行。
 - 提供 SSH 无界面自检脚本，便于板端联调。
 
 ## 效果展示
@@ -23,14 +24,14 @@
 
 ## 架构说明
 
-核心并发模型是 **CameraGrabber 多路采集 + FrameBuffer 最新帧槽位 + InferenceWorker 单线程串行推理**。
+核心并发模型是 **多路采集线程 + 最新帧槽位 + 单线程串行推理**。
 
-1. `CameraGrabber` 每路一个线程，从摄像头、视频或图片源读取画面。
-2. `FrameBuffer` 按 `camera_id` 保存最新帧，新帧覆盖旧帧，保证实时性。
-3. `InferenceWorker` 等待任意通道更新，然后串行取出当前批次帧并调用检测后端。
+1. Web 运行时为每路输入启动一个采集线程，从摄像头、视频或图片源读取画面。
+2. 最新帧缓冲区按 `camera_id` 保存画面，新帧覆盖旧帧，保证实时性。
+3. 推理线程等待任意通道更新，然后串行取出当前批次帧并调用检测后端。
 4. `PCDetectionBackend` 或 `BPUDetectionBackend` 输出统一的 `DetectionResult`。
-5. UI 线程更新监控画面，并通过 `DBManager` 记录车牌出现事件。
-6. 查询框按车牌号查询 SQLite 中的最后出现位置。
+5. Web API 更新监控画面、通行日志和统计，并通过 `DBManager` 记录车牌出现事件。
+6. 查询接口按车牌号查询 SQLite 中的最后出现位置。
 
 更细的模块职责见 [`docs/REPO_MAP.md`](docs/REPO_MAP.md)。
 
@@ -58,7 +59,9 @@ garage_locator/
 │   ├── preprocess.py
 │   ├── postprocess.py
 │   └── ultralytics_yolo_pose.py
-├── main.py                     # PyQt5 主程序入口
+├── web_app.py                  # Web 控制台服务入口
+├── webview_app.py              # PyQt WebView 桌面壳入口
+├── web/                        # Web 控制台前端页面
 ├── requirements.txt
 └── .gitignore
 ```
@@ -81,20 +84,39 @@ Windows PowerShell 可把下面命令里的 `python3` 换成 `python`。
 
 ## 运行方式
 
-### PC 端模拟运行
+### 桌面 WebView 控制台（推荐）
 
 ```bash
-python3 main.py \
-  --backend pc \
-  --inputs assets/test_plate.jpg assets/test_plate2.jpg \
-  --yolo-model models/yolo11m-pose-carplate.pt
+python3 webview_app.py --backend pc
 ```
 
-说明：
+该入口会自动启动本地 Web 服务、采集/推理后台线程，并用 PyQt WebView 打开桌面窗口。未指定 `--inputs` 时会从 `assets/` 中取测试图片作为 1 到 4 号通道输入。
 
-- `--backend pc` 会初始化 YOLO + PaddleOCR。
-- `--inputs` 最多读取 4 路，顺序对应 1 到 4 号摄像头。
-- 图片源会通过 OpenCV 读取，适合开发机快速看 UI 和流程。
+Windows + conda 环境：
+
+```powershell
+conda run -n garage_ocr python webview_app.py --backend pc
+```
+
+指定 4 路输入：
+
+```powershell
+conda run -n garage_ocr python webview_app.py --backend pc --inputs assets/test_plate.jpg assets/test_plate2.jpg
+```
+
+只查看现有数据库和 Web 页面、不启动推理：
+
+```powershell
+conda run -n garage_ocr python webview_app.py --backend none
+```
+
+### 浏览器 Web 控制台
+
+```bash
+python3 web_app.py --host 127.0.0.1 --port 8080 --backend pc
+```
+
+浏览器打开 `http://127.0.0.1:8080/`。Web 端会启动采集/推理线程，实时写入 `vehicle_locator.db`，并提供车牌查询、路径示意、监控证据图和实时通行日志展示。若只想查看现有数据库，可使用 `--backend none`。
 
 ### RDK X5 无界面自检
 
@@ -108,11 +130,13 @@ python3 test/test_headless.py \
 
 脚本会运行约 20 秒，输出检测日志，并生成 `headless_test.db`。该数据库已被 `.gitignore` 忽略。
 
-### RDK X5 全屏监控台
+### RDK X5 Web 控制台
 
 ```bash
-DISPLAY=:0 python3 main.py \
+python3 web_app.py \
   --backend bpu \
+  --host 0.0.0.0 \
+  --port 8080 \
   --inputs /dev/video0 assets/test_plate.jpg \
   --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
   --lpr-bin models/lpr.bin
@@ -120,9 +144,9 @@ DISPLAY=:0 python3 main.py \
 
 使用方式：
 
-- 查询框输入车牌并回车，右侧面板会显示末次摄像头、时间和车牌裁切图。
-- 按 `Esc` 退出全屏程序。
-- 未配置输入源的通道显示离线占位图。
+- 在同一局域网浏览器打开 `http://<RDK-IP>:8080/`。
+- 查询框输入车牌并回车，页面会显示末次摄像头、时间、车牌裁切图和路径示意。
+- 未配置输入源的通道会使用资源图或空画面占位。
 
 ### 独立车牌识别 CLI
 
@@ -140,8 +164,9 @@ python3 utils/detect_plate_rdk.py assets/test_plate.jpg \
 轻量验证命令：
 
 ```bash
-python3 -m py_compile main.py utils/*.py test/test_headless.py
-python3 main.py --help
+python3 -m py_compile web_app.py webview_app.py utils/*.py test/test_headless.py
+python3 web_app.py --help
+python3 webview_app.py --help
 python3 test/test_headless.py --help
 python3 utils/detect_plate_rdk.py --help
 ```
@@ -154,12 +179,13 @@ python3 utils/detect_plate_rdk.py --help
 - 无界面自检数据库：`headless_test.db`。
 - 独立识别 CLI 默认输出目录：`output_results/` 或输入目录下的输出目录。
 - 车牌裁切调试目录：`plate_crops/`。
+- 数据集压缩包和其他 `.zip` 文件。
 
 这些运行生成物均不应提交，已在 `.gitignore` 中忽略。
 
 ## 开发约定
 
-- 根目录保留 `main.py` 作为主入口。
+- 根目录保留 `web_app.py` 和 `webview_app.py` 作为主入口。
 - 方法文件统一放在单层 `utils/` 下。
 - 测试和自检入口放在 `test/` 下。
 - 车牌几何裁切、文本清洗、图片读写和绘制工具统一放在 `utils/plate_utils.py`。

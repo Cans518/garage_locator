@@ -46,8 +46,76 @@ class PCDetectionBackend(VehiclePlateDetector):
             raise RuntimeError("paddleocr is required for PC backend. Install with: pip install paddlepaddle paddleocr") from exc
 
         self.yolo = YOLO(yolo_model_path)
-        self.ocr = PaddleOCR(lang="ch", show_log=False)
+        self.ocr = self._create_paddle_ocr(PaddleOCR)
         print("PC Inference Backend initialized successfully.")
+
+    def _create_paddle_ocr(self, paddle_ocr_cls):
+        """创建兼容 PaddleOCR 2.x/3.x 的中文 OCR 实例"""
+        common_kwargs = {"lang": "ch"}
+
+        # PaddleOCR 3.x 默认会启用文档方向和矫正模型；车牌裁切图不需要这些步骤。
+        v3_lightweight_kwargs = {
+            **common_kwargs,
+            "use_doc_orientation_classify": False,
+            "use_doc_unwarping": False,
+            "use_textline_orientation": False,
+        }
+        try:
+            return paddle_ocr_cls(**v3_lightweight_kwargs)
+        except ValueError as exc:
+            unknown_v3_arg = any(name in str(exc) for name in v3_lightweight_kwargs if name != "lang")
+            if not unknown_v3_arg:
+                raise
+
+        try:
+            return paddle_ocr_cls(lang="ch", show_log=False)
+        except ValueError as exc:
+            if "show_log" not in str(exc):
+                raise
+            return paddle_ocr_cls(**common_kwargs)
+
+    def _recognize_plate_text(self, plate_img: np.ndarray) -> tuple[str, float]:
+        """兼容 PaddleOCR 2.x 和 3.x 的返回格式"""
+        try:
+            if hasattr(self.ocr, "predict"):
+                ocr_res = self.ocr.predict(plate_img)
+            else:
+                ocr_res = self.ocr.ocr(plate_img, det=False, cls=False)
+        except Exception as exc:
+            print(f"PaddleOCR recognize failed: {exc}")
+            return "", 0.0
+
+        if not ocr_res:
+            return "", 0.0
+
+        first_res = ocr_res[0]
+
+        # PaddleOCR 3.x: OCRResult.res 通常包含 rec_texts / rec_scores。
+        res_dict = getattr(first_res, "res", None)
+        if isinstance(res_dict, dict):
+            texts = res_dict.get("rec_texts") or []
+            scores = res_dict.get("rec_scores") or []
+            if texts:
+                score = float(scores[0]) if scores else 0.0
+                return str(texts[0]), score
+
+        if isinstance(first_res, dict):
+            texts = first_res.get("rec_texts") or []
+            scores = first_res.get("rec_scores") or []
+            if texts:
+                score = float(scores[0]) if scores else 0.0
+                return str(texts[0]), score
+
+        # PaddleOCR 2.x det=False: [[("TEXT", score)]] 或相近嵌套结构。
+        try:
+            candidate = first_res[0]
+            if isinstance(candidate, (list, tuple)) and len(candidate) >= 2:
+                return str(candidate[0]), float(candidate[1])
+        except Exception:
+            pass
+
+        print(f"Unexpected PaddleOCR result format: {type(first_res)}")
+        return "", 0.0
 
     def detect(self, frame: np.ndarray) -> list[DetectionResult]:
         results = self.yolo(frame, verbose=False)
@@ -82,15 +150,7 @@ class PCDetectionBackend(VehiclePlateDetector):
                 continue
 
             # 调用 PaddleOCR 进行识别
-            try:
-                ocr_res = self.ocr.ocr(plate_img, det=False, cls=False)
-                if ocr_res and ocr_res[0]:
-                    text, score = ocr_res[0][0]
-                    score = float(score)
-                else:
-                    text, score = "", 0.0
-            except Exception:
-                text, score = "", 0.0
+            text, score = self._recognize_plate_text(plate_img)
 
             cleaned_text = clean_plate_number(text)
 

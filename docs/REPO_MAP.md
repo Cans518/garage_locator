@@ -6,7 +6,9 @@
 
 | 路径 | 用途 |
 | --- | --- |
-| `main.py` | PyQt5 全屏监控台主入口。 |
+| `web_app.py` | Web 控制台服务入口，负责 HTTP API、静态资源和推理运行时。 |
+| `webview_app.py` | PyQt WebView 桌面壳入口，自动启动本地 Web 服务。 |
+| `web/` | Web 控制台前端页面、样式和交互脚本。 |
 | `test/test_headless.py` | 无显示器环境自检入口，适合 SSH 到 RDK X5 板端联调。 |
 | `utils/detect_plate_rdk.py` | 独立车牌识别 CLI，适合调试单图、目录、视频或摄像头输入。 |
 
@@ -17,7 +19,7 @@
 | `utils/camera_worker.py` | 多路采集线程、共享帧缓冲、串行推理线程和画面标注。 |
 | `utils/inference.py` | 统一推理后端抽象，封装 PC 与 BPU 两种检测识别路径。 |
 | `utils/db_manager.py` | SQLite 轨迹库，保存车牌、摄像头编号、时间和车牌裁切图。 |
-| `utils/gui_theme.py` | QSS 主题和离线占位图。 |
+| `utils/gui_theme.py` | Qt 主题和离线占位图，供保留的 Qt 自检或桌面壳扩展复用。 |
 | `utils/plate_utils.py` | 车牌四点排序、透视裁切、OCR 文本清洗、图片读写和绘制工具。 |
 
 ## 板端适配
@@ -38,6 +40,7 @@
 | `docs/` | 仓库地图和测试说明。 |
 | `test/` | 测试、自检入口。 |
 | `utils/` | 单层方法文件目录。 |
+| `web/` | Web 控制台前端资源。 |
 
 ## 主程序数据流
 
@@ -45,13 +48,13 @@
 input source
     │
     ▼
-CameraGrabber x N
+CameraCaptureThread x N
     │  put(camera_id, frame)
     ▼
-FrameBuffer
+LatestFrameBuffer
     │  get_all()
     ▼
-InferenceWorker
+WebInferenceRuntime
     │  detector.detect(frame)
     ▼
 PCDetectionBackend / BPUDetectionBackend
@@ -59,7 +62,7 @@ PCDetectionBackend / BPUDetectionBackend
     ▼
 DetectionResult[]
     │
-    ├── UI QLabel 更新标注画面
+    ├── /api/events 更新监控画面和通行日志
     └── DBManager.record_occurrence()
             │
             ▼
@@ -91,9 +94,9 @@ DetectionResult[]
 
 ## 维护约定
 
-- 根目录保留 `main.py` 作为主启动入口。
+- 根目录保留 `web_app.py` 和 `webview_app.py` 作为主启动入口。
 - 方法文件统一放在单层 `utils/` 下。
 - 测试或自检入口放在 `test/` 下。
 - 不再恢复原始 RDK 示例中的批量评估、性能测试、模型映射和通用可视化工具，除非它们重新成为本应用运行路径的一部分。
-- 生成物如 `__pycache__/`、`*.db`、`output_results/`、`plate_crops/`、`output_*.jpg` 不应提交。
+- 生成物如 `__pycache__/`、`*.db`、`*.zip`、`output_results/`、`plate_crops/`、`output_*.jpg` 不应提交。
 - 目录、导入或 CLI 参数变更后，至少运行 [`docs/TESTING.md`](TESTING.md) 中的轻量测试。

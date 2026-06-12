@@ -1,103 +1,198 @@
 def get_qss_theme() -> str:
     """返回地库车辆定位系统的主题 QSS 样式表"""
     return """
-    /* 主窗口与背景 */
     QMainWindow {
-        background-color: #0A0D14;
-        color: #E4E6EB;
+        background-color: #F1F5F9; /* slate-100 */
+        color: #0F172A;            /* slate-900 */
     }
 
-    /* 标签与常规文字 */
     QLabel {
-        color: #E4E6EB;
-        font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei';
+        color: #0F172A;
+        font-family: 'Microsoft YaHei UI', 'Segoe UI', 'Microsoft YaHei';
+        font-size: 18px;
+    }
+
+    QLabel#app_title {
+        color: #0F172A;
+        font-size: 34px;
+        font-weight: 800;
+    }
+
+    QLabel#app_subtitle {
+        color: #64748B; /* slate-500 */
+        font-size: 18px;
+    }
+
+    QLabel#section_title {
+        color: #0F172A;
+        font-size: 21px;
+        font-weight: 800;
+    }
+
+    QLabel#rail_title {
+        color: #334155; /* slate-700 */
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    QLabel#result_text {
+        color: #0F172A;
+        background: transparent;
+        font-size: 20px;
+        line-height: 1.5;
+    }
+
+    QLabel#hint_text {
+        color: #64748B;
+        font-size: 16px;
+    }
+
+    QLabel#top_time {
+        color: #475569;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    QFrame#top_bar {
+        background-color: #FFFFFF;
+        border: 1px solid #D8E2EA;
+        border-radius: 12px;
+    }
+
+    QFrame#primary_panel,
+    QFrame#side_panel,
+    QFrame#rail_card,
+    QFrame#result_card {
+        background-color: #FFFFFF;
+        border: 1px solid #D8E2EA;
+        border-radius: 12px;
+    }
+
+    QFrame#search_card {
+        background-color: #F8FBFD;
+        border: 1px solid #BAE6FD; /* sky-200 */
+        border-radius: 12px;
+    }
+
+    QLabel#status_pill {
+        background-color: #ECFDF5; /* emerald-50 */
+        color: #047857;            /* emerald-700 */
+        border: 1px solid #A7F3D0; /* emerald-200 */
+        border-radius: 16px;
+        padding: 7px 14px;
+        font-weight: 800;
         font-size: 14px;
     }
 
-    /* 卡片式面板 */
-    QFrame#panel_frame {
-        background-color: #121824;
-        border: 1px solid #1E293B;
-        border-radius: 8px;
+    QLabel#soft_pill {
+        background-color: #F0F9FF; /* sky-50 */
+        color: #0369A1;            /* sky-700 */
+        border: 1px solid #BAE6FD; /* sky-200 */
+        border-radius: 16px;
+        padding: 7px 14px;
+        font-weight: 800;
+        font-size: 14px;
     }
 
-    /* 监控窗口网格单项样式 */
+    QFrame#metric_card {
+        background-color: #F8FBFD;
+        border: 1px solid #D8E2EA;
+        border-radius: 12px;
+    }
+
+    QLabel#metric_value {
+        color: #0891B2; /* cyan-600 */
+        font-size: 30px;
+        font-weight: 900;
+    }
+
+    QLabel#metric_label {
+        color: #64748B;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    QLabel#plate_crop {
+        background-color: #F8FAFC;
+        border: 1px solid #CBD5E1;
+        border-radius: 10px;
+    }
+
     QLabel#camera_view {
-        background-color: #121824;
-        border: 2px solid #1E293B;
-        border-radius: 6px;
+        background-color: #0F172A;
+        border: 1px solid #CBD5E1;
+        border-radius: 10px;
     }
     QLabel#camera_view[active="true"] {
-        border: 2px solid #00F2C3;
+        border: 2px solid #10B981;
     }
 
-    /* 输入框 */
     QLineEdit {
-        background-color: #1B2436;
-        border: 1px solid #2D3D5A;
-        border-radius: 6px;
-        padding: 8px 12px;
-        color: #FFFFFF;
-        font-size: 14px;
-        font-family: 'Segoe UI', 'Microsoft YaHei';
+        background-color: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        border-radius: 10px;
+        padding: 12px 18px;
+        color: #0F172A;
+        font-size: 24px;
+        font-weight: 800;
+        font-family: 'Microsoft YaHei UI', 'Segoe UI', 'Microsoft YaHei';
+        selection-background-color: #A5F3FC;
     }
     QLineEdit:focus {
-        border: 1px solid #1F8EF1;
-        background-color: #202B41;
+        border: 2px solid #06B6D4;
+        background-color: #F8FBFD;
     }
 
-    /* 按钮样式 */
     QPushButton {
-        background-color: #1F8EF1;
+        background-color: #06B6D4; /* cyan-500 */
         color: #FFFFFF;
         border: none;
-        border-radius: 6px;
-        padding: 9px 16px;
-        font-weight: bold;
-        font-size: 14px;
-        font-family: 'Segoe UI', 'Microsoft YaHei';
+        border-radius: 10px;
+        padding: 12px 22px;
+        font-weight: 800;
+        font-size: 21px;
+        font-family: 'Microsoft YaHei UI', 'Segoe UI', 'Microsoft YaHei';
     }
     QPushButton:hover {
-        background-color: #389BFA;
+        background-color: #0891B2; /* cyan-600 */
     }
     QPushButton:pressed {
-        background-color: #0C7CD5;
+        background-color: #0E7490; /* cyan-700 */
+        color: #F8FAFC;
     }
 
-    /* 日志列表框 */
     QListWidget {
-        background-color: #121824;
-        border: 1px solid #1E293B;
-        border-radius: 8px;
-        padding: 4px;
-        color: #A0AEC0;
-        font-size: 13px;
+        background-color: #F8FAFC;
+        border: 1px solid #D8E2EA;
+        border-radius: 10px;
+        padding: 6px;
+        color: #334155;
+        font-size: 15px;
         font-family: 'Consolas', 'Monaco', 'Microsoft YaHei';
     }
     QListWidget::item {
-        border-bottom: 1px solid #1E293B;
-        padding: 8px 6px;
+        border-bottom: 1px solid #E2E8F0;
+        padding: 8px 10px;
     }
     QListWidget::item:hover {
-        background-color: #1B2436;
-        color: #FFFFFF;
-        border-radius: 4px;
+        background-color: #E0F2FE;
+        color: #0F172A;
+        border-radius: 6px;
     }
 
-    /* 滚动条 */
     QScrollBar:vertical {
         border: none;
-        background: #0D111A;
+        background: #F1F5F9;
         width: 8px;
         margin: 0px;
     }
     QScrollBar::handle:vertical {
-        background: #2D3D5A;
+        background: #CBD5E1;
         min-height: 20px;
         border-radius: 4px;
     }
     QScrollBar::handle:vertical:hover {
-        background: #1F8EF1;
+        background: #06B6D4;
     }
     QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
         height: 0px;
@@ -105,25 +200,22 @@ def get_qss_theme() -> str:
     """
 
 def get_no_signal_pixmap(width=640, height=480, name="Camera"):
-    """使用 OpenCV 动态生成一个科技感十足的 'NO SIGNAL' 占位图"""
+    """使用 OpenCV 动态生成一个清爽冷色的 'NO SIGNAL' 占位图"""
     import cv2
     import numpy as np
     
-    # 建立暗灰蓝色背景
     img = np.zeros((height, width, 3), dtype=np.uint8)
-    img[:, :] = (20, 16, 11)  # BGR 格式的深蓝色底 `#0B1014`
+    img[:, :] = (42, 31, 15)  # BGR: slate-900
 
-    # 画一些科技风的网格线
     grid_size = 40
     for y in range(0, height, grid_size):
-        cv2.line(img, (0, y), (width, y), (30, 26, 20), 1)
+        cv2.line(img, (0, y), (width, y), (58, 45, 30), 1)
     for x in range(0, width, grid_size):
-        cv2.line(img, (x, 0), (x, height), (30, 26, 20), 1)
+        cv2.line(img, (x, 0), (x, height), (58, 45, 30), 1)
 
-    # 画科技风的四角框标记
     pad = 20
     length = 30
-    color = (90, 80, 70) # 灰色科技框
+    color = (212, 180, 103)  # cyan-300 in BGR
     # 左上
     cv2.line(img, (pad, pad), (pad + length, pad), color, 2)
     cv2.line(img, (pad, pad), (pad, pad + length), color, 2)
@@ -137,7 +229,6 @@ def get_no_signal_pixmap(width=640, height=480, name="Camera"):
     cv2.line(img, (width - pad, height - pad), (width - pad - length, height - pad), color, 2)
     cv2.line(img, (width - pad, height - pad), (width - pad, height - pad - length), color, 2)
 
-    # 绘制文字 "SIGNAL LOSS" 或 "NO SIGNAL"
     text1 = f"{name} - OFFLINE"
     text2 = "NO VIDEO SIGNAL"
     
@@ -146,12 +237,11 @@ def get_no_signal_pixmap(width=640, height=480, name="Camera"):
     t1_size = cv2.getTextSize(text1, font, 0.7, 2)[0]
     t1_x = (width - t1_size[0]) // 2
     t1_y = height // 2 - 15
-    cv2.putText(img, text1, (t1_x, t1_y), font, 0.7, (140, 130, 120), 2, cv2.LINE_AA)
+    cv2.putText(img, text1, (t1_x, t1_y), font, 0.7, (241, 245, 249), 2, cv2.LINE_AA)
 
-    # 第二排文字
     t2_size = cv2.getTextSize(text2, font, 0.6, 1)[0]
     t2_x = (width - t2_size[0]) // 2
     t2_y = height // 2 + 20
-    cv2.putText(img, text2, (t2_x, t2_y), font, 0.6, (90, 80, 70), 1, cv2.LINE_AA)
+    cv2.putText(img, text2, (t2_x, t2_y), font, 0.6, (226, 232, 240), 1, cv2.LINE_AA)
 
     return img

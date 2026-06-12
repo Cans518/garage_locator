@@ -10,7 +10,8 @@
 
 ```bash
 python3 -m py_compile \
-  main.py \
+  web_app.py \
+  webview_app.py \
   utils/__init__.py \
   utils/camera_worker.py \
   utils/db_manager.py \
@@ -27,13 +28,13 @@ python3 -m py_compile \
 Windows PowerShell 可使用反引号续行，或直接写成一行：
 
 ```powershell
-python -m py_compile main.py utils\__init__.py utils\camera_worker.py utils\db_manager.py utils\detect_plate_rdk.py utils\gui_theme.py utils\inference.py utils\plate_utils.py utils\preprocess.py utils\postprocess.py utils\ultralytics_yolo_pose.py test\test_headless.py
+python -m py_compile web_app.py webview_app.py utils\__init__.py utils\camera_worker.py utils\db_manager.py utils\detect_plate_rdk.py utils\gui_theme.py utils\inference.py utils\plate_utils.py utils\preprocess.py utils\postprocess.py utils\ultralytics_yolo_pose.py test\test_headless.py
 ```
 
 ### 核心导入烟测
 
 ```bash
-python3 -c "import main; import utils.camera_worker; import utils.db_manager; import utils.inference; import utils.plate_utils; from utils.plate_utils import clean_plate_number; assert clean_plate_number('皖A·S0747') == '皖AS0747'; print('core import smoke OK')"
+python3 -c "import web_app; import webview_app; import utils.camera_worker; import utils.db_manager; import utils.inference; import utils.plate_utils; from utils.plate_utils import clean_plate_number; assert clean_plate_number('皖A·S0747') == '皖AS0747'; print('core import smoke OK')"
 ```
 
 ### 数据库烟测
@@ -45,7 +46,8 @@ python3 -c "import tempfile, os, gc; from utils.db_manager import DBManager; fd,
 ### CLI 参数解析
 
 ```bash
-python3 main.py --help
+python3 web_app.py --help
+python3 webview_app.py --help
 python3 test/test_headless.py --help
 python3 utils/detect_plate_rdk.py --help
 ```
@@ -55,13 +57,13 @@ python3 utils/detect_plate_rdk.py --help
 需要额外安装 `ultralytics`、`paddlepaddle`、`paddleocr`。
 
 ```bash
-python3 main.py \
+python3 web_app.py \
   --backend pc \
   --inputs assets/test_plate.jpg assets/test_plate2.jpg \
   --yolo-model models/yolo11m-pose-carplate.pt
 ```
 
-该命令会启动 PyQt5 GUI，适合有显示器的开发环境。
+该命令会启动浏览器 Web 控制台服务。若需要桌面窗口，可把入口替换为 `webview_app.py`。
 
 ## RDK X5 板端联调
 
@@ -80,8 +82,10 @@ python3 test/test_headless.py \
 全屏监控台：
 
 ```bash
-DISPLAY=:0 python3 main.py \
+python3 web_app.py \
   --backend bpu \
+  --host 0.0.0.0 \
+  --port 8080 \
   --inputs /dev/video0 assets/test_plate.jpg \
   --yolo-bin models/yolo11m-pose-carplate_bayese_640x640_nv12.bin \
   --lpr-bin models/lpr.bin
