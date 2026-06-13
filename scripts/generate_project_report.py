@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT_DIR = ROOT / "reports"
 ASSET_DIR = REPORT_DIR / "assets"
 TRAIN_DIR = ROOT / "train"
-DOCX_PATH = REPORT_DIR / "Garage_Vehicle_Locator_Project_Report.docx"
+DOCX_PATH = REPORT_DIR / "项目报告.docx"
 
 
 BRAND = {
