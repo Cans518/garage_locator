@@ -62,50 +62,143 @@
               <h2>地库路径示意</h2>
               <span id="routeLabel">等待查询结果</span>
             </div>
-            <svg class="garage-map" viewBox="0 0 1000 520" role="img" aria-label="地库路径示意图">
+            <div class="map-controls">
+              <div class="entry-selector" role="radiogroup" aria-label="选择地库入口">
+                <button class="entry-option active" type="button" data-entry="north" aria-pressed="true">
+                  <span>北入口</span>
+                  <small>A/B 区下行坡道</small>
+                </button>
+                <button class="entry-option" type="button" data-entry="west" aria-pressed="false">
+                  <span>西入口</span>
+                  <small>C 区临停入口</small>
+                </button>
+                <button class="entry-option" type="button" data-entry="south" aria-pressed="false">
+                  <span>南入口</span>
+                  <small>D 区商业入口</small>
+                </button>
+                <button class="entry-option" type="button" data-entry="east" aria-pressed="false">
+                  <span>东入口</span>
+                  <small>B 区快速入口</small>
+                </button>
+              </div>
+              <p class="route-meta" id="routeMeta">选择入口后，查询车辆即可生成推荐路线</p>
+            </div>
+            <svg class="garage-map" viewBox="0 0 1200 720" role="img" aria-label="多入口地库路径示意图">
               <defs>
-                <pattern id="grid" width="100" height="80" patternUnits="userSpaceOnUse">
-                  <path d="M 100 0 L 0 0 0 80" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+                  <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#e2e8f0" stroke-width="1"/>
                 </pattern>
+                <marker id="routeArrow" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto" markerUnits="strokeWidth">
+                  <path d="M2 2 L14 8 L2 14 Z" fill="#10b981"/>
+                </marker>
               </defs>
-              <rect x="0" y="0" width="1000" height="520" fill="url(#grid)"/>
-              <g class="slots">
-                <rect x="300" y="100" width="54" height="72"/>
-                <rect x="390" y="100" width="54" height="72"/>
-                <rect x="480" y="100" width="54" height="72"/>
-                <rect x="570" y="100" width="54" height="72"/>
-                <rect x="660" y="100" width="54" height="72"/>
-                <rect x="750" y="100" width="54" height="72"/>
-                <rect x="300" y="260" width="54" height="72"/>
-                <rect x="390" y="260" width="54" height="72"/>
-                <rect x="480" y="260" width="54" height="72"/>
-                <rect x="570" y="260" width="54" height="72"/>
-                <rect x="660" y="260" width="54" height="72"/>
-                <rect x="750" y="260" width="54" height="72"/>
+              <rect class="map-bg" x="0" y="0" width="1200" height="720" fill="url(#grid)"/>
+
+              <g class="zone-blocks">
+                <rect class="zone zone-a" x="145" y="70" width="385" height="170"/>
+                <rect class="zone zone-b" x="675" y="70" width="380" height="170"/>
+                <rect class="zone zone-c" x="145" y="380" width="385" height="220"/>
+                <rect class="zone zone-d" x="675" y="380" width="380" height="220"/>
+                <rect class="zone zone-core" x="500" y="250" width="200" height="135"/>
               </g>
+
+              <g class="zone-labels">
+                <text x="168" y="104">A 区 长租车位</text>
+                <text x="698" y="104">B 区 快停车位</text>
+                <text x="168" y="414">C 区 临停车位</text>
+                <text x="698" y="414">D 区 商业车位</text>
+                <text x="538" y="288">核心设备区</text>
+              </g>
+
+              <g class="parking-slots">
+                <rect x="175" y="120" width="54" height="36"/><rect x="238" y="120" width="54" height="36"/><rect x="301" y="120" width="54" height="36"/><rect x="364" y="120" width="54" height="36"/><rect x="427" y="120" width="54" height="36"/>
+                <rect x="175" y="184" width="54" height="36"/><rect x="238" y="184" width="54" height="36"/><rect x="301" y="184" width="54" height="36"/><rect x="364" y="184" width="54" height="36"/><rect x="427" y="184" width="54" height="36"/>
+                <rect x="705" y="120" width="54" height="36"/><rect x="768" y="120" width="54" height="36"/><rect x="831" y="120" width="54" height="36"/><rect x="894" y="120" width="54" height="36"/><rect x="957" y="120" width="54" height="36"/>
+                <rect x="705" y="184" width="54" height="36"/><rect x="768" y="184" width="54" height="36"/><rect x="831" y="184" width="54" height="36"/><rect x="894" y="184" width="54" height="36"/><rect x="957" y="184" width="54" height="36"/>
+                <rect x="175" y="450" width="54" height="42"/><rect x="238" y="450" width="54" height="42"/><rect x="301" y="450" width="54" height="42"/><rect x="364" y="450" width="54" height="42"/><rect x="427" y="450" width="54" height="42"/>
+                <rect x="175" y="526" width="54" height="42"/><rect x="238" y="526" width="54" height="42"/><rect x="301" y="526" width="54" height="42"/><rect x="364" y="526" width="54" height="42"/><rect x="427" y="526" width="54" height="42"/>
+                <rect x="705" y="450" width="54" height="42"/><rect x="768" y="450" width="54" height="42"/><rect x="831" y="450" width="54" height="42"/><rect x="894" y="450" width="54" height="42"/><rect x="957" y="450" width="54" height="42"/>
+                <rect x="705" y="526" width="54" height="42"/><rect x="768" y="526" width="54" height="42"/><rect x="831" y="526" width="54" height="42"/><rect x="894" y="526" width="54" height="42"/><rect x="957" y="526" width="54" height="42"/>
+              </g>
+
+              <g class="service-areas">
+                <rect x="525" y="305" width="60" height="44"/><text x="555" y="333">电梯</text>
+                <rect x="615" y="305" width="60" height="44"/><text x="645" y="333">机房</text>
+                <rect x="70" y="300" width="78" height="44"/><text x="109" y="328">收费岛</text>
+                <rect x="1055" y="228" width="76" height="44"/><text x="1093" y="256">充电区</text>
+                <rect x="555" y="646" width="90" height="38"/><text x="600" y="671">扶梯厅</text>
+              </g>
+
               <g class="corridors">
-                <path d="M80 430 H870"/>
-                <path d="M180 105 V430"/>
-                <path d="M180 150 H870"/>
-                <path d="M180 300 H870"/>
-                <path d="M760 150 V430"/>
+                <path class="main-lane" d="M130 360 H1060"/>
+                <path class="main-lane" d="M600 120 V610"/>
+                <path class="branch-lane" d="M230 150 H980"/>
+                <path class="branch-lane" d="M230 300 H980"/>
+                <path class="branch-lane" d="M230 470 H980"/>
+                <path class="branch-lane" d="M230 610 H980"/>
+                <path class="branch-lane" d="M230 150 V610"/>
+                <path class="branch-lane" d="M430 150 V610"/>
+                <path class="branch-lane" d="M780 150 V610"/>
+                <path class="branch-lane" d="M980 150 V610"/>
+                <path class="entry-lane" d="M600 38 V120"/>
+                <path class="entry-lane" d="M52 360 H130"/>
+                <path class="entry-lane" d="M600 682 V610"/>
+                <path class="entry-lane" d="M1148 345 H1060"/>
               </g>
+              <g class="lane-center">
+                <path d="M130 360 H1060"/>
+                <path d="M600 120 V610"/>
+                <path d="M230 150 H980"/>
+                <path d="M230 470 H980"/>
+              </g>
+
+              <path id="routeHalo" class="route-halo hidden" d=""/>
               <path id="routePath" class="route hidden" d=""/>
-              <g class="entry">
-                <circle cx="80" cy="430" r="8"/>
-                <text x="66" y="464">入口</text>
+
+              <g class="entry-point active" data-entry="north" transform="translate(600 38)" tabindex="0" role="button" aria-label="北入口">
+                <circle r="13"/><text x="0" y="-18">北入口</text>
               </g>
-              <g class="camera-point" data-camera="1" transform="translate(870 105)">
-                <circle r="16"/><text y="5">C1</text>
+              <g class="entry-point" data-entry="west" transform="translate(52 360)" tabindex="0" role="button" aria-label="西入口">
+                <circle r="13"/><text x="30" y="-18">西入口</text>
               </g>
-              <g class="camera-point" data-camera="2" transform="translate(180 150)">
-                <circle r="16"/><text y="5">C2</text>
+              <g class="entry-point" data-entry="south" transform="translate(600 682)" tabindex="0" role="button" aria-label="南入口">
+                <circle r="13"/><text x="0" y="-18">南入口</text>
               </g>
-              <g class="camera-point" data-camera="3" transform="translate(760 300)">
-                <circle r="16"/><text y="5">C3</text>
+              <g class="entry-point" data-entry="east" transform="translate(1148 345)" tabindex="0" role="button" aria-label="东入口">
+                <circle r="13"/><text x="-50" y="-18">东入口</text>
               </g>
-              <g class="camera-point" data-camera="4" transform="translate(420 430)">
-                <circle r="16"/><text y="5">C4</text>
+
+              <g class="camera-point" data-camera="1" transform="translate(1010 110)">
+                <circle r="17"/><text y="5">C1</text>
+              </g>
+              <g class="camera-point" data-camera="2" transform="translate(185 150)">
+                <circle r="17"/><text y="5">C2</text>
+              </g>
+              <g class="camera-point" data-camera="3" transform="translate(815 470)">
+                <circle r="17"/><text y="5">C3</text>
+              </g>
+              <g class="camera-point" data-camera="4" transform="translate(400 610)">
+                <circle r="17"/><text y="5">C4</text>
+              </g>
+              <g class="camera-point planned" data-camera="5" transform="translate(600 300)">
+                <circle r="15"/><text y="5">C5</text>
+              </g>
+              <g class="camera-point planned" data-camera="6" transform="translate(1035 470)">
+                <circle r="15"/><text y="5">C6</text>
+              </g>
+              <g class="camera-point planned" data-camera="7" transform="translate(745 610)">
+                <circle r="15"/><text y="5">C7</text>
+              </g>
+              <g class="camera-point planned" data-camera="8" transform="translate(130 360)">
+                <circle r="15"/><text y="5">C8</text>
+              </g>
+
+              <g class="map-legend">
+                <rect x="34" y="628" width="216" height="64"/>
+                <line x1="55" y1="648" x2="95" y2="648" class="legend-lane"/>
+                <text x="108" y="653">主通道 / 支路</text>
+                <line x1="55" y1="674" x2="95" y2="674" class="legend-route"/>
+                <text x="108" y="679">推荐路线</text>
               </g>
             </svg>
           </section>
