@@ -56,13 +56,19 @@ def asset_images():
     ]
 
 
-def encode_image_data_url(frame: np.ndarray, quality=82):
+def encode_image_jpeg(frame: np.ndarray, quality=82):
     if frame is None or frame.size == 0:
         return None
     ok, encoded = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
     if not ok:
         return None
-    payload = base64.b64encode(encoded.tobytes()).decode("ascii")
+    return encoded.tobytes()
+
+
+def jpeg_data_url(encoded):
+    if not encoded:
+        return None
+    payload = base64.b64encode(encoded).decode("ascii")
     return f"data:image/jpeg;base64,{payload}"
 
 
@@ -175,6 +181,8 @@ class WebInferenceRuntime:
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
         self.camera_frames = {}
+        self.camera_stream_frames = {}
+        self.camera_stream_versions = {}
         self.events = []
         self.latency_by_camera = {}
         self.errors = []
@@ -218,10 +226,15 @@ class WebInferenceRuntime:
                         self.errors = self.errors[-20:]
 
                 annotated = draw_annotations(frame, results)
-                frame_url = encode_image_data_url(annotated)
+                frame_jpeg = encode_image_jpeg(annotated)
+                frame_url = jpeg_data_url(frame_jpeg)
 
                 with self.lock:
                     self.camera_frames[camera_id + 1] = frame_url
+                    self.camera_stream_frames[camera_id + 1] = frame_jpeg
+                    self.camera_stream_versions[camera_id + 1] = (
+                        self.camera_stream_versions.get(camera_id + 1, 0) + 1
+                    )
                     self.latency_by_camera[camera_id + 1] = latency
 
                 for result in results:
@@ -257,6 +270,13 @@ class WebInferenceRuntime:
             "errors": errors,
             "running": not self.stop_event.is_set(),
         }
+
+    def stream_frame(self, camera_id: int):
+        with self.lock:
+            return (
+                self.camera_stream_versions.get(camera_id, 0),
+                self.camera_stream_frames.get(camera_id),
+            )
 
 
 def query_last_location(plate_number: str):
@@ -373,6 +393,8 @@ class GarageWebHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/events":
+            params = parse_qs(parsed.query)
+            include_images = params.get("images", ["1"])[0] != "0"
             runtime_snapshot = WEB_RUNTIME.snapshot() if WEB_RUNTIME else None
             runtime_events = runtime_snapshot["events"] if runtime_snapshot else []
             runtime_images = runtime_snapshot["cameraImages"] if runtime_snapshot else []
@@ -380,7 +402,9 @@ class GarageWebHandler(BaseHTTPRequestHandler):
                 self,
                 {
                     "events": runtime_events or recent_events(),
-                    "cameraImages": runtime_images or asset_images()[:4],
+                    "cameraImages": (
+                        runtime_images or asset_images()[:4]
+                    ) if include_images else [],
                     "stats": {
                         "channels": 4,
                         "records": len(runtime_events) if runtime_events else len(recent_events(100)),
@@ -392,6 +416,19 @@ class GarageWebHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if path == "/api/stream":
+            params = parse_qs(parsed.query)
+            try:
+                camera_id = int(params.get("camera", [""])[0])
+            except ValueError:
+                self.send_error(400, "camera must be an integer from 1 to 4")
+                return
+            if camera_id not in range(1, 5):
+                self.send_error(404, "camera not found")
+                return
+            self.stream_camera(camera_id)
+            return
+
         if path.startswith("/assets/"):
             self.serve_file(ASSETS_ROOT / path.removeprefix("/assets/"))
             return
@@ -401,6 +438,37 @@ class GarageWebHandler(BaseHTTPRequestHandler):
             return
 
         self.send_error(404)
+
+    def stream_camera(self, camera_id: int):
+        runtime = WEB_RUNTIME
+        if runtime is None or runtime.sources[camera_id - 1] is None:
+            self.send_error(503, "camera is not running")
+            return
+
+        self.send_response(200)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.end_headers()
+
+        last_version = 0
+        try:
+            while WEB_RUNTIME is runtime and not runtime.stop_event.is_set():
+                version, body = runtime.stream_frame(camera_id)
+                if body is None or version == last_version:
+                    time.sleep(0.02)
+                    continue
+
+                last_version = version
+                self.wfile.write(b"--frame\r\n")
+                self.wfile.write(b"Content-Type: image/jpeg\r\n")
+                self.wfile.write(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
+                self.wfile.write(body)
+                self.wfile.write(b"\r\n")
+                self.wfile.flush()
+                time.sleep(0.1)
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            pass
 
     def serve_file(self, file_path: Path):
         try:

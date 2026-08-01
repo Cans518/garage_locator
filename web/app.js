@@ -381,20 +381,17 @@ async function searchPlate(plate) {
   }
 }
 
-function renderCameras(images) {
+function renderCameraStreams() {
   cameraGrid.innerHTML = "";
-  const safeImages = Array.isArray(images) ? images : [];
 
   for (let index = 0; index < 4; index += 1) {
     const tile = document.createElement("article");
     tile.className = "camera-tile";
 
-    if (safeImages[index]) {
-      const img = document.createElement("img");
-      img.alt = `C${index + 1} 监控画面`;
-      img.src = safeImages[index];
-      tile.appendChild(img);
-    }
+    const img = document.createElement("img");
+    img.alt = `C${index + 1} 实时监控画面`;
+    img.src = `/api/stream?camera=${index + 1}`;
+    tile.appendChild(img);
 
     const label = document.createElement("span");
     label.textContent = `C${index + 1}`;
@@ -426,9 +423,8 @@ function renderEvents(events) {
 }
 
 async function loadEvents() {
-  const response = await fetch("/api/events");
+  const response = await fetch("/api/events?images=0");
   const data = await response.json();
-  renderCameras(data.cameraImages || []);
   renderEvents(data.events || []);
   channelCount.textContent = data.stats?.channels ?? 4;
   recordCount.textContent = data.stats?.records ?? 0;
@@ -458,5 +454,6 @@ entryPoints.forEach((point) => {
 setActiveEntry(selectedEntry);
 updateClock();
 setInterval(updateClock, 30_000);
+renderCameraStreams();
 loadEvents();
-setInterval(loadEvents, 8_000);
+setInterval(loadEvents, 1_000);
