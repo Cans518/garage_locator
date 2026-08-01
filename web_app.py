@@ -109,6 +109,23 @@ class CameraCaptureThread(threading.Thread):
         self.frame_buffer = frame_buffer
         self.stop_event = stop_event
 
+    @staticmethod
+    def _open_capture(source_value):
+        is_v4l2_device = (
+            isinstance(source_value, str)
+            and source_value.startswith("/dev/video")
+        )
+        if not is_v4l2_device:
+            return cv2.VideoCapture(source_value)
+
+        cap = cv2.VideoCapture(source_value, cv2.CAP_V4L2)
+        if cap.isOpened():
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            cap.set(cv2.CAP_PROP_FPS, 10)
+        return cap
+
     def run(self):
         source_value = self.source
         if isinstance(source_value, str) and source_value.isdigit():
@@ -125,11 +142,11 @@ class CameraCaptureThread(threading.Thread):
                     time.sleep(1.0)
                 return
 
-        cap = cv2.VideoCapture(source_value)
+        cap = self._open_capture(source_value)
         while not self.stop_event.is_set():
             if not cap.isOpened():
                 time.sleep(2.0)
-                cap = cv2.VideoCapture(source_value)
+                cap = self._open_capture(source_value)
                 continue
 
             ok, frame = cap.read()
@@ -140,7 +157,7 @@ class CameraCaptureThread(threading.Thread):
                     continue
                 cap.release()
                 time.sleep(2.0)
-                cap = cv2.VideoCapture(source_value)
+                cap = self._open_capture(source_value)
                 continue
 
             self.frame_buffer.put(self.camera_id, frame)
@@ -234,7 +251,6 @@ class WebInferenceRuntime:
             "cameraImages": [
                 frames.get(camera_id)
                 for camera_id in range(1, 5)
-                if frames.get(camera_id)
             ],
             "events": events,
             "latency": latency,

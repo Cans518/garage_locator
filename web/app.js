@@ -383,16 +383,16 @@ async function searchPlate(plate) {
 
 function renderCameras(images) {
   cameraGrid.innerHTML = "";
-  const safeImages = images.length ? images : [];
+  const safeImages = Array.isArray(images) ? images : [];
 
   for (let index = 0; index < 4; index += 1) {
     const tile = document.createElement("article");
     tile.className = "camera-tile";
 
-    if (safeImages.length && safeImages[index % safeImages.length]) {
+    if (safeImages[index]) {
       const img = document.createElement("img");
       img.alt = `C${index + 1} 监控画面`;
-      img.src = safeImages[index % safeImages.length];
+      img.src = safeImages[index];
       tile.appendChild(img);
     }
 

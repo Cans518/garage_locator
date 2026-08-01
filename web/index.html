@@ -83,6 +83,7 @@
               </div>
               <p class="route-meta" id="routeMeta">选择入口后，查询车辆即可生成推荐路线</p>
             </div>
+            <div class="map-viewport" role="region" tabindex="0" aria-label="可触控平移的多入口地库路径示意图">
             <svg class="garage-map" viewBox="0 0 1200 720" role="img" aria-label="多入口地库路径示意图">
               <defs>
                 <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
@@ -156,16 +157,16 @@
               <path id="routePath" class="route hidden" d=""/>
 
               <g class="entry-point active" data-entry="north" transform="translate(600 38)" tabindex="0" role="button" aria-label="北入口">
-                <circle r="13"/><text x="0" y="-18">北入口</text>
+                <circle class="entry-hit" r="34"/><circle class="entry-dot" r="13"/><text x="0" y="-18">北入口</text>
               </g>
               <g class="entry-point" data-entry="west" transform="translate(52 360)" tabindex="0" role="button" aria-label="西入口">
-                <circle r="13"/><text x="30" y="-18">西入口</text>
+                <circle class="entry-hit" r="34"/><circle class="entry-dot" r="13"/><text x="30" y="-18">西入口</text>
               </g>
               <g class="entry-point" data-entry="south" transform="translate(600 682)" tabindex="0" role="button" aria-label="南入口">
-                <circle r="13"/><text x="0" y="-18">南入口</text>
+                <circle class="entry-hit" r="34"/><circle class="entry-dot" r="13"/><text x="0" y="-18">南入口</text>
               </g>
               <g class="entry-point" data-entry="east" transform="translate(1148 345)" tabindex="0" role="button" aria-label="东入口">
-                <circle r="13"/><text x="-50" y="-18">东入口</text>
+                <circle class="entry-hit" r="34"/><circle class="entry-dot" r="13"/><text x="-50" y="-18">东入口</text>
               </g>
 
               <g class="camera-point" data-camera="1" transform="translate(1010 110)">
@@ -201,6 +202,7 @@
                 <text x="108" y="679">推荐路线</text>
               </g>
             </svg>
+            </div>
           </section>
         </section>
       </section>
