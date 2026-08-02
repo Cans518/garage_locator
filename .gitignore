@@ -26,3 +26,5 @@ output_results/
 plate_crops/
 temp_*/
 output_*.jpg
+
+~$*
