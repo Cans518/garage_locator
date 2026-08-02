@@ -9,6 +9,9 @@ ENV/
 *.db-journal
 *.log
 *.zip
+~$*.docx
+~$*.pptx
+~$*.xlsx
 
 # 模型权重大文件过滤
 *.pt
